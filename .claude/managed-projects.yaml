@@ -1,0 +1,20 @@
+managed_projects:
+  - id: garden-in-parallel
+    name: 小径分岔的花园
+    description: 建立一档节目叫做"小径分岔的花园"
+    path: D:/boke/garden in parallel
+    status: active
+    added_at: "2026-04-22"
+    references:
+      - id: post-factory
+        name: 后期制作车间
+        description: 音视频剪辑空间、知识图谱 wiki、音频切片、字幕生成
+        path: D:/boke/garden post factory
+        type: workshop
+        readonly: true
+      - id: planning-vault
+        name: 节目企划
+        description: 播客策划文档、原始转录、主题分析、文学参考
+        path: "D:/Personal obsidian/personal-obsidian/1-Outputs/Personal/Products/Industry oriented/Culture/boke"
+        type: planning
+        readonly: true

@@ -1,0 +1,145 @@
+pipeline:
+  ingest:
+    supported_formats:
+      - ".mp4"
+      - ".mov"
+      - ".mkv"
+      - ".avi"
+      - ".wav"
+      - ".mp3"
+      - ".flac"
+      - ".m4a"
+    audio_extraction:
+      format: wav
+      sample_rate: 48000
+      channels: 2
+      bit_depth: 24
+
+  transcribe:
+    engine: funasr
+    funasr:
+      model: paraformer-zh
+      output_format: mixed
+    whisper:
+      model: large-v3
+      language: zh
+      device: auto
+    speaker_diarization:
+      enabled: true
+      num_speakers: 2
+
+  topic_analysis:
+    min_segment_duration: 60
+    max_segment_duration: 600
+    silence_threshold_db: -40
+    silence_min_duration: 1.5
+    topic_coherence_threshold: 0.6
+
+  clip_planning:
+    min_clip_duration: 120
+    max_clip_duration: 900
+    optimal_clip_duration: 300
+    opening_types:
+      - golden_quote
+      - suspense
+      - reference
+      - atmosphere
+      - action
+    ending_types:
+      - summary
+      - convergence
+      - emotion
+    transition_types:
+      - crossfade
+      - atmosphere
+    max_clips_per_version: 5
+    min_clips_per_version: 2
+
+  audio_processor:
+    crossfade_duration_ms: 50
+    breath_handling:
+      enabled: true
+      mode: reduce
+      reduction_db: -20
+      min_breath_duration: 0.15
+      max_breath_duration: 0.8
+    cut_point:
+      prefer_zero_crossing: true
+      prefer_silence: true
+      min_silence_for_cut: 0.3
+      padding_before_ms: 100
+      padding_after_ms: 100
+    fade_in_duration_ms: 30
+    fade_out_duration_ms: 50
+
+  subtitle:
+    format: srt
+    encoding: utf-8
+    max_lines: 1
+    max_chars_per_line_cn: 18
+    max_chars_per_line_en: 37
+    min_display_duration: 1.0
+    max_display_duration: 7.0
+    min_gap_duration: 0.067
+    reading_speed_cn: 4
+    reading_speed_en: 18
+    strip_trailing_period_cn: false
+    correction_rules_file: corrections.yaml
+    content_processing:
+      simplified_chinese: true
+      smart_punctuation: true
+      errata_enabled: true
+      single_line: true
+    render_style:
+      mode: frosted_glass_dark
+      font_name: "Noto Sans SC"
+      font_size: 20
+      font_color: "white"
+      bg_color: "dark_gray"
+      bg_opacity: 0.60
+      blur_radius: 15
+      position: "bottom_center"
+      margin_v: 55
+      alignment: 2
+      single_line: true
+
+  audio_verification:
+    loudness:
+      target_lufs: -14
+      true_peak_dbtp: -1
+      max_lra: 10
+    cut_quality:
+      check_zero_crossing: true
+      check_breath_interruption: true
+      check_abrupt_start: true
+      check_abrupt_end: true
+      check_theme_completeness: true
+    snr_min_db: 30
+
+  video_processor:
+    default_resolution: "1920x1080"
+    default_fps: 30
+    default_codec: libx264
+    default_preset: slow
+    default_crf: 20
+    pixel_format: yuv420p
+    color_primaries: bt709
+    color_trc: bt709
+    colorspace: bt709
+    color_range: tv
+
+  export:
+    audio_codec: aac
+    audio_bitrate: "192k"
+    audio_sample_rate: 48000
+    audio_channels: 2
+    container: mp4
+
+output:
+  base_dir: output
+  clips_dir: clips
+  srt_dir: srt
+  audio_dir: audio
+  video_dir: video
+  reports_dir: reports
+  experiments_dir: experiments

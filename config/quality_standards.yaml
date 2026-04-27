@@ -1,0 +1,159 @@
+audio:
+  sample_rate:
+    podcast: 44100
+    video: 48000
+  bit_depth:
+    production: 24
+    distribution: 16
+  channels:
+    podcast_mono: 1
+    video_stereo: 2
+  snr_min_db: 60
+  noise_floor_max_dbfs: -60
+
+  loudness_standards:
+    broadcast_ebu_r128:
+      target_lufs: -23
+      tolerance: 0.5
+      true_peak_dbtp: -1
+      max_lra: 15
+    broadcast_atsc_a85:
+      target_lufs: -24
+      tolerance: 2
+      true_peak_dbtp: -2
+    broadcast_china:
+      target_lufs: -24
+      true_peak_dbtp: -2
+    streaming_general:
+      target_lufs: -14
+      true_peak_dbtp: -1
+      max_lra: 10
+    podcast_general:
+      target_lufs: -16
+      true_peak_dbtp: -1
+
+  breath_handling:
+    mode: reduce
+    reduction_range_db: [-18, -24]
+    min_keep_ratio: 0.3
+    max_breath_to_remove_s: 0.3
+
+  cut_point:
+    zero_crossing: required
+    crossfade_min_ms: 3
+    crossfade_recommended_ms: 50
+    j_cut_frames: [3, 10]
+    l_cut_frames: [3, 10]
+    padding_before_ms: 100
+    padding_after_ms: 100
+
+subtitle:
+  content:
+    language: simplified_chinese
+    punctuation_mode: smart_pause_based
+    single_line: true
+    max_chars_per_line_cn: 18
+    errata_enabled: true
+    line_break_rules:
+      forbidden_line_start: "的了着过吗呢吧啊呀哇嘛呗的啦咯嗯噢哦哈"
+      forbidden_line_end: "不没很更最就才又再还却倒并而或"
+
+  srt:
+    time_format: "HH:MM:SS,mmm"
+    encoding: utf-8
+    min_display_s: 1.0
+    max_display_s: 7.0
+    min_gap_s: 0.067
+    max_lines: 1
+    max_chars_per_line_cn: 18
+    max_chars_per_line_en: 37
+    reading_speed_cn_chars_per_s: 4
+    reading_speed_en_chars_per_s: 18
+    strip_trailing_period_cn: false
+
+  ass:
+    time_format: "H:MM:SS.cc"
+    default_font: "Noto Sans SC"
+    default_fontsize: 40
+    primary_color: "&H00FFFFFF"
+    outline_color: "&H00000000"
+    back_color: "&H99000000"
+    outline_width: 0
+    shadow_width: 0
+    alignment: 2
+    margin_v: 50
+    margin_l: 10
+    margin_r: 10
+    border_style: 3
+    box_outline_width: 2
+
+  render_style:
+    mode: frosted_glass_dark
+    font_name: "Noto Sans SC"
+    font_size: 20
+    font_color: "white"
+    bg_color: "dark_gray"
+    bg_opacity: 0.60
+    blur_radius: 15
+    outline_width: 0
+    shadow_width: 0
+    position: "bottom_center"
+    margin_v: 55
+    alignment: 2
+    single_line: true
+    padding_h: 12
+    padding_v: 6
+    corner_radius: 8
+
+  title_safe_area_percent: 10
+  action_safe_area_percent: 5
+
+  golden_rules:
+    - "可读性第一：观众必须能在显示时间内舒适地读完字幕"
+    - "同步为王：字幕与语音的时间差不超过0.5秒"
+    - "单行极限：任何时刻屏幕上最多显示一行字幕"
+    - "语义完整：断句必须保持语法和语义的完整性"
+    - "视觉清晰：半透明毛玻璃偏灰黑色背景+白色字体确保可读性"
+    - "标点精简：省略不必要的标点，保留语气标点"
+    - "简体中文：如对话是中文，必须使用简体中文"
+    - "勘误校对：结合上下文对知名作家、作品名、成语、常识进行勘误"
+    - "位置偏下：字幕位于屏幕居中偏下方，尽可能靠下"
+    - "商用字体：使用商用免费授权字体（如思源黑体/Noto Sans SC）"
+
+video:
+  color_space:
+    sdr: bt709
+    hdr: bt2020
+  color_range: tv
+  pixel_format: yuv420p
+  broadcast_legal:
+    luma_8bit: [16, 235]
+    chroma_8bit: [16, 240]
+    luma_10bit: [64, 940]
+
+  encoding:
+    h264:
+      profile: high
+      level_1080p: "4.1"
+      level_4k: "5.1"
+      crf_high_quality: 18
+      crf_web: 20
+      crf_default: 23
+      preset_recommended: slow
+    h265:
+      efficiency_vs_h264: 0.55
+
+  bitrate:
+    h264_720p_30fps_mbps: 5
+    h264_1080p_30fps_mbps: 8
+    h264_1080p_60fps_mbps: 12
+    h264_1440p_30fps_mbps: 16
+    h264_4k_30fps_mbps: 35
+
+short_video:
+  first_3_seconds_rule: true
+  visual_change_interval_s: [3, 5]
+  bgm_level_below_voice_db: [-6, -10]
+  vertical_composition:
+    subject_position: center_top
+    subtitle_zone: bottom_third

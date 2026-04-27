@@ -1,0 +1,31 @@
+[project]
+name = "garden-autoresearch"
+version = "0.1.0"
+description = "Autoresearch framework for podcast video production pipeline"
+requires-python = ">=3.10"
+dependencies = [
+    "pyyaml>=6.0",
+    "rich>=13.0",
+    "click>=8.0",
+    "srt>=3.5",
+    "pydub>=0.25",
+]
+
+[project.optional-dependencies]
+transcribe = [
+    "faster-whisper>=1.0",
+]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.1",
+]
+
+[project.scripts]
+garden = "tools.cli:cli"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
