@@ -2,3 +2,4 @@ from autoresearch.metrics import PipelineMetrics, compute_metrics_from_quality_r
 from autoresearch.experiment import Experiment, ExperimentLog
 from autoresearch.strategies import get_strategy, get_all_strategies, get_recommended_strategies
 from autoresearch.logger import ResearchLogger
+from autoresearch.skill_research import SkillMetrics, SkillVerifier, SkillExperiment, SkillExperimentLog
