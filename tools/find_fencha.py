@@ -1,7 +1,8 @@
 import json
-from pathlib import Path
+from pipeline.loader import load_project
 
-mixed_json_path = Path("D:/boke/garden post factory/C0257_full_mixed.json")
+ctx = load_project()
+mixed_json_path = ctx.config.source_transcript
 with open(mixed_json_path, "r", encoding="utf-8") as f:
     data = json.load(f)
 

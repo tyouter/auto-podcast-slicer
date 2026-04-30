@@ -3,27 +3,25 @@ import time
 import subprocess
 from pathlib import Path
 from pipeline.config import PipelineConfig
-from pipeline.transcribe import parse_funasr_mixed_json
-from pipeline.subtitle_merger import process_transcript_to_subtitles
-from pipeline.subtitle_content import (
-    process_subtitle_content,
-    load_custom_errata,
-    generate_ass_with_rounded_bg,
-)
+from pipeline.loader import load_project
+from pipeline.subtitle_content import process_subtitle_content, generate_ass_with_rounded_bg
 
-config = PipelineConfig()
+ctx = load_project()
+config = ctx.config
 output_dir = config.output_dir
+audio_source = config.source_audio
+video_source = config.source_video
+custom_errata = ctx.custom_errata
+transcript = ctx.transcript
+entries = ctx.entries
+merged = ctx.merged
 
-mixed_json_path = Path("D:/boke/garden post factory/C0257_full_mixed.json")
-audio_source = Path("D:/boke/garden post factory/C0257_mixed_normalized.wav")
-video_source = Path("D:/boke/garden post factory/C0257.MP4")
-corrections_path = Path("config/corrections.yaml")
+HIGHLIGHTS_CLIPS = config.get_clips("highlights")
+PHILOSOPHY_CLIPS = config.get_clips("philosophy")
+DIALOGUE_CLIPS = config.get_clips("dialogue")
+WIKI_CLIPS = config.get_clips("deep_thinking")
+IMMERSIVE_CLIPS = config.get_clips("immersive")
 
-custom_errata = load_custom_errata(corrections_path)
-
-print("Loading transcript...")
-transcript = parse_funasr_mixed_json(mixed_json_path)
-entries, merged = process_transcript_to_subtitles(transcript, config)
 print(f"Loaded {len(entries)} subtitle entries")
 
 
@@ -210,284 +208,6 @@ def process_clip(clip, clip_dir, make_vertical=True, make_srt=True):
         json.dump(metadata, f, ensure_ascii=False, indent=2)
 
     return metadata
-
-
-HIGHLIGHTS_CLIPS = [
-    {
-        "id": "H01_time_bifurcates",
-        "title": "时间不是线性的，是分岔的",
-        "series": "高光",
-        "description": "时间在这里分岔了——从博尔赫斯到时间哲学的核心洞见",
-        "start_s": 1580,
-        "end_s": 1610,
-        "hook": "时间在这里分岔了",
-        "domain": "时间哲学",
-    },
-    {
-        "id": "H02_no_art_only_artists",
-        "title": "没有所谓的艺术，有的只是一个个艺术家",
-        "series": "高光",
-        "description": "用分岔原理解释艺术创作——每个艺术家就是一个分岔",
-        "start_s": 3030,
-        "end_s": 3055,
-        "hook": "没有所谓的艺术，有的只是一个个艺术家",
-        "domain": "艺术与AI",
-    },
-    {
-        "id": "H03_every_choice_is_fork",
-        "title": "每一次选择，都是一个分岔点",
-        "series": "高光",
-        "description": "我们产生了一个分岔——可能性与选择的关系",
-        "start_s": 530,
-        "end_s": 565,
-        "hook": "我们产生了一个分岔",
-        "domain": "可能性",
-    },
-    {
-        "id": "H04_fate_crossroad",
-        "title": "命运的分岔路口",
-        "series": "高光",
-        "description": "在某个关键的时间节点，命运在此分岔",
-        "start_s": 3340,
-        "end_s": 3380,
-        "hook": "在某个关键的时间节点",
-        "domain": "人生",
-    },
-    {
-        "id": "H05_simultaneous_possibilities",
-        "title": "所有可能性同时发生",
-        "series": "高光",
-        "description": "不是选择，而是同时存在——时间分岔的本质",
-        "start_s": 1530,
-        "end_s": 1565,
-        "hook": "所有可能性同时发生",
-        "domain": "可能性",
-    },
-    {
-        "id": "H06_invisible_forks",
-        "title": "看得到与看不到的分岔",
-        "series": "高光",
-        "description": "还有分岔吗？看不到的分岔——不确定性的哲学",
-        "start_s": 4150,
-        "end_s": 4185,
-        "hook": "还有分岔吗",
-        "domain": "不确定性",
-    },
-]
-
-PHILOSOPHY_CLIPS = [
-    {
-        "id": "P01_borges_and_time",
-        "title": "博尔赫斯与时间分岔",
-        "series": "哲思",
-        "description": "文学如何预言了物理学的多世界诠释——博尔赫斯《小径分岔的花园》的深层解读",
-        "start_s": 640,
-        "end_s": 780,
-        "hook": "博尔赫斯写了一个关于时间分岔的故事",
-        "domain": "文学",
-    },
-    {
-        "id": "P02_time_bifurcation_deep",
-        "title": "时间在这里分岔",
-        "series": "哲思",
-        "description": "时间的非线性本质——深入讨论时间分岔的哲学含义",
-        "start_s": 1580,
-        "end_s": 1700,
-        "hook": "时间在这里分岔了",
-        "domain": "时间哲学",
-    },
-    {
-        "id": "P03_possibility_means",
-        "title": "可能性意味着什么",
-        "series": "哲思",
-        "description": "选择与可能性的关系——每一次选择都是一个分岔点",
-        "start_s": 530,
-        "end_s": 680,
-        "hook": "可能性到底意味着什么",
-        "domain": "可能性",
-    },
-    {
-        "id": "P04_artist_as_fork",
-        "title": "艺术家就是分岔",
-        "series": "哲思",
-        "description": "AI时代的艺术创作分岔——没有所谓的艺术，有的只是一个个艺术家",
-        "start_s": 3030,
-        "end_s": 3180,
-        "hook": "一个艺术家就是一个分岔",
-        "domain": "艺术与AI",
-    },
-    {
-        "id": "P05_life_fork_deep",
-        "title": "从分岔节点看人生",
-        "series": "哲思",
-        "description": "命运的偶然与必然——在时间点分岔处的人生选择",
-        "start_s": 3340,
-        "end_s": 3500,
-        "hook": "从分岔的节点看人生",
-        "domain": "人生",
-    },
-    {
-        "id": "P06_uncertainty_deep",
-        "title": "不确定的分岔",
-        "series": "哲思",
-        "description": "已知与未知的边界——看得到分岔与看不到分岔",
-        "start_s": 4150,
-        "end_s": 4280,
-        "hook": "看得到分岔与看不到分岔",
-        "domain": "不确定性",
-    },
-]
-
-DIALOGUE_CLIPS = [
-    {
-        "id": "D01_identity_collision",
-        "title": "你怎么定义自己？",
-        "series": "精彩对话",
-        "description": "导演vs产品经理——身份标签的碰撞与反思",
-        "start_s": 424,
-        "end_s": 530,
-        "hook": "你怎么定义自己",
-    },
-    {
-        "id": "D02_naming_the_show",
-        "title": "这个节目叫什么？",
-        "series": "精彩对话",
-        "description": "节目命名的即兴讨论——小径分岔的花园如何诞生",
-        "start_s": 318,
-        "end_s": 420,
-        "hook": "我们这个节目名称叫什么",
-    },
-    {
-        "id": "D03_bird_arrives",
-        "title": "白颊椋鸟来了",
-        "series": "精彩对话",
-        "description": "自然介入的奇妙时刻——一只鸟飞来，与分岔主题的偶然呼应",
-        "start_s": 57,
-        "end_s": 94,
-        "hook": "你看那有一只鸟过来",
-    },
-    {
-        "id": "D04_no_certain_ending",
-        "title": "不追求确定的结局",
-        "series": "精彩对话",
-        "description": "探索型vs设计型——这个节目不追求确定的结局",
-        "start_s": 100,
-        "end_s": 215,
-        "hook": "他不追求一个确定的结局",
-    },
-    {
-        "id": "D05_daydream_creation",
-        "title": "利用白日梦去创作",
-        "series": "精彩对话",
-        "description": "关于创作方法的深度对话——进入无拘无束的状态",
-        "start_s": 4950,
-        "end_s": 5100,
-        "hook": "利用白日梦去创作",
-    },
-]
-
-WIKI_CLIPS = [
-    {
-        "id": "wiki_01_origin",
-        "title": "缘起：花园中的相遇",
-        "chapter": "第一章 · 缘起",
-        "series": "深度思考",
-        "description": "节目录制的缘起——在花园中偶然相遇，一只白颊椋鸟飞来，播客漫谈的开始",
-        "start_s": 55,
-        "end_s": 200,
-    },
-    {
-        "id": "wiki_02_garden_metaphor",
-        "title": "隐喻：小径分岔的花园",
-        "chapter": "第二章 · 隐喻",
-        "series": "深度思考",
-        "description": "博尔赫斯《小径分岔的花园》——时间分岔的核心文学隐喻，平行宇宙与无限可能",
-        "start_s": 318,
-        "end_s": 530,
-    },
-    {
-        "id": "wiki_03_time_bifurcation",
-        "title": "分岔：时间在这里分岔",
-        "chapter": "第三章 · 分岔",
-        "series": "深度思考",
-        "description": "时间不是线性的而是分岔的——所有可能性同时发生，时间分岔的哲学含义",
-        "start_s": 580,
-        "end_s": 780,
-    },
-    {
-        "id": "wiki_04_possibility",
-        "title": "可能性：我们产生了一个分岔",
-        "chapter": "第四章 · 可能性",
-        "series": "深度思考",
-        "description": "每一次选择都是一个分岔点——可能性与时间的关系，选择意味着什么",
-        "start_s": 1530,
-        "end_s": 1720,
-    },
-    {
-        "id": "wiki_05_creation",
-        "title": "创作：从观念出发",
-        "chapter": "第五章 · 创作",
-        "series": "深度思考",
-        "description": "创作是一个分岔——从观念出发，戏剧创作的信念与冲动",
-        "start_s": 1860,
-        "end_s": 2050,
-    },
-    {
-        "id": "wiki_06_artist_fork",
-        "title": "艺术家：一个艺术家就是一个分岔",
-        "chapter": "第六章 · 艺术家",
-        "series": "深度思考",
-        "description": "没有所谓的艺术，有的只是一个个艺术家——艺术创作的分岔原理",
-        "start_s": 2960,
-        "end_s": 3180,
-    },
-    {
-        "id": "wiki_07_life_crossroad",
-        "title": "人生：命运的分岔路口",
-        "chapter": "第七章 · 人生",
-        "series": "深度思考",
-        "description": "在时间点分岔处的人生选择——从分岔的节点看人生，命运的分岔路口",
-        "start_s": 3340,
-        "end_s": 3550,
-    },
-    {
-        "id": "wiki_08_uncertainty",
-        "title": "不确定：看得到与看不到的分岔",
-        "chapter": "第八章 · 不确定",
-        "series": "深度思考",
-        "description": "从分岔的视角看不确定性——看得到分岔与看不到分岔，未知的可能性",
-        "start_s": 4150,
-        "end_s": 4320,
-    },
-    {
-        "id": "wiki_09_dream",
-        "title": "梦境：白日梦与潜意识",
-        "chapter": "第九章 · 梦境",
-        "series": "深度思考",
-        "description": "利用白日梦去创作——进入无拘无束的状态，接触潜意识的世界",
-        "start_s": 4950,
-        "end_s": 5168,
-    },
-]
-
-IMMERSIVE_CLIPS = [
-    {
-        "id": "immersive_p1",
-        "title": "花园漫谈·上",
-        "series": "沉浸式场域",
-        "description": "开场、鸟鸣、节目缘起、博尔赫斯——花园中的完整对话上半场",
-        "start_s": 55,
-        "end_s": 1800,
-    },
-    {
-        "id": "immersive_p2",
-        "title": "花园漫谈·下",
-        "series": "沉浸式场域",
-        "description": "时间分岔、创作、人生、梦境——花园中的完整对话下半场",
-        "start_s": 1800,
-        "end_s": 5168,
-    },
-]
 
 
 def run_workflow2():

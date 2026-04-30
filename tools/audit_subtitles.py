@@ -1,10 +1,9 @@
 import re
-import sys
 from pathlib import Path
 from collections import defaultdict
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
 from pipeline.config import PipelineConfig
+from pipeline.loader import load_project
 from pipeline.transcribe import parse_funasr_mixed_json
 from pipeline.subtitle_merger import process_transcript_to_subtitles
 from pipeline.subtitle_content import (
@@ -15,13 +14,12 @@ from pipeline.subtitle_content import (
     SEMANTIC_ANOMALY_PATTERNS,
 )
 
-config = PipelineConfig()
-corrections_path = Path("config/corrections.yaml")
-custom_errata = load_custom_errata(corrections_path)
-
-mixed_json_path = Path("D:/boke/garden post factory/C0257_full_mixed.json")
-transcript = parse_funasr_mixed_json(mixed_json_path)
-entries, merged = process_transcript_to_subtitles(transcript, config)
+ctx = load_project()
+config = ctx.config
+entries = ctx.entries
+merged = ctx.merged
+transcript = ctx.transcript
+custom_errata = ctx.custom_errata
 
 processed = []
 for i, entry in enumerate(entries):

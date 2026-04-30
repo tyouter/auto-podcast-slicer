@@ -30,6 +30,8 @@ class PipelineConfig:
         self._data = load_yaml(CONFIG_DIR / "default.yaml")
         self._standards = load_yaml(CONFIG_DIR / "quality_standards.yaml")
         self._platforms = load_yaml(CONFIG_DIR / "platforms.yaml")
+        self._clips = load_yaml(CONFIG_DIR / "clips.yaml")
+        self._sources = load_yaml(CONFIG_DIR / "sources.yaml")
 
         if config_override:
             self._data = deep_merge(self._data, config_override)
@@ -78,6 +80,36 @@ class PipelineConfig:
     @property
     def output_dir(self) -> Path:
         return Path(self.get("output.base_dir", str(OUTPUT_DIR)))
+
+    @property
+    def clips(self) -> dict:
+        return self._clips
+
+    def get_clips(self, series: str) -> list[dict]:
+        return self._clips.get(series, [])
+
+    def get_all_clips(self) -> dict[str, list[dict]]:
+        return {k: v for k, v in self._clips.items()}
+
+    @property
+    def sources(self) -> dict:
+        return self._sources.get("sources", {})
+
+    @property
+    def source_transcript(self) -> Path:
+        return Path(self.sources.get("transcript", ""))
+
+    @property
+    def source_audio(self) -> Path:
+        return Path(self.sources.get("audio", ""))
+
+    @property
+    def source_video(self) -> Path:
+        return Path(self.sources.get("video", ""))
+
+    @property
+    def source_corrections(self) -> Path:
+        return Path(self.sources.get("corrections", "config/corrections.yaml"))
 
     def to_dict(self) -> dict:
         return self._data.copy()

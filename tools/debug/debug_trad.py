@@ -1,15 +1,16 @@
-import sys
-sys.path.insert(0, ".")
 from pathlib import Path
 from pipeline.config import PipelineConfig
+from pipeline.loader import load_project
 from pipeline.transcribe import parse_funasr_mixed_json
 from pipeline.subtitle_merger import process_transcript_to_subtitles
 from pipeline.subtitle_content import process_subtitle_content, load_custom_errata, TRADITIONAL_ONLY
 
-config = PipelineConfig()
-transcript = parse_funasr_mixed_json(Path("D:/boke/garden post factory/C0257_full_mixed.json"))
-entries, merged = process_transcript_to_subtitles(transcript, config)
-custom_errata = load_custom_errata(Path("config/corrections.yaml"))
+ctx = load_project()
+config = ctx.config
+entries = ctx.entries
+merged = ctx.merged
+transcript = ctx.transcript
+custom_errata = ctx.custom_errata
 
 processed = []
 for i, entry in enumerate(entries):

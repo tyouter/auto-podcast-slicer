@@ -1,6 +1,8 @@
 import subprocess
 from pathlib import Path
+from pipeline.loader import load_project
 
+video_source = str(load_project().config.source_video).replace("\\", "/")
 srt_path = Path("output/clips_fencha/clip01_literature/clip01_literature.srt")
 srt_path_escaped = str(srt_path).replace("\\", "/").replace(":", "\\:")
 
@@ -19,7 +21,7 @@ force_style = (
 
 cmd = [
     "ffmpeg", "-y",
-    "-i", "D:/boke/garden post factory/C0257.MP4",
+    "-i", video_source,
     "-ss", "640", "-to", "642",
     "-vf", f"subtitles='{srt_path_escaped}':force_style='{force_style}'",
     "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28",

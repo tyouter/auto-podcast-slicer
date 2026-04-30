@@ -233,7 +233,7 @@ def process_clip_audio(
                 max_duration=breath_cfg.get("max_breath_duration", 0.8),
             )
             breath_processed = True
-        except Exception:
+        except (subprocess.CalledProcessError, FileNotFoundError, OSError):
             import shutil
             shutil.copy2(raw_clip_path, output_path)
     else:

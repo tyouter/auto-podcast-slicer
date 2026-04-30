@@ -7,7 +7,8 @@ from datetime import datetime
 from dataclasses import dataclass, field, asdict
 
 from pipeline.config import PipelineConfig
-from pipeline.transcribe import parse_funasr_mixed_json, TranscriptResult, TranscriptSegment
+from pipeline.loader import load_project
+from pipeline.transcribe import TranscriptResult, TranscriptSegment
 from pipeline.subtitle_merger import process_transcript_to_subtitles
 from pipeline.subtitle_generator import SubtitleEntry
 from pipeline.subtitle_content import (
@@ -73,8 +74,7 @@ class SubtitleContentResearch:
 
     def load_transcript(self) -> TranscriptResult:
         if self._transcript is None:
-            mixed_json_path = Path("D:/boke/garden post factory/C0257_full_mixed.json")
-            self._transcript = parse_funasr_mixed_json(mixed_json_path)
+            self._transcript = load_project().transcript
         return self._transcript
 
     def process_entries_with_content(

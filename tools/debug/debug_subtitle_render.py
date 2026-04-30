@@ -2,8 +2,9 @@ import subprocess
 from pathlib import Path
 from PIL import Image
 import numpy as np
+from pipeline.loader import load_project
 
-video_source = Path("D:/boke/garden post factory/C0257.MP4")
+video_source = load_project().config.source_video
 
 # Reference: no subtitle
 frame_nosub = Path("output/frame_nosub.png")

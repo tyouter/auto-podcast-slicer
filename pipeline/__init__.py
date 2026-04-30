@@ -1,4 +1,5 @@
 from pipeline.config import PipelineConfig
+from pipeline.loader import load_project, ProjectContext
 from pipeline.ingest import ingest
 from pipeline.transcribe import transcribe, parse_funasr_mixed_json, TranscriptResult
 from pipeline.topic_analysis import analyze_topics

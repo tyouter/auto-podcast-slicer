@@ -112,7 +112,7 @@ def check_subtitle_files(
                     style_score -= 10
                 if "ScaledBorderAndShadow" not in ass_content:
                     style_score -= 5
-        except Exception:
+        except (OSError, UnicodeDecodeError):
             pass
 
     if total_entries == 0:
@@ -244,7 +244,7 @@ def check_efficiency(output_dir: Path) -> dict | None:
             total_generated += data.get("generated_count", 0)
             total_skipped += data.get("skipped_count", 0)
             total_time_s += data.get("total_time_s", 0)
-        except Exception:
+        except (OSError, json.JSONDecodeError, KeyError):
             pass
 
     total = total_generated + total_skipped

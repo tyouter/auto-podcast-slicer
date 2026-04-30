@@ -113,7 +113,7 @@ def export_for_platform(
     audio_output = output_dir / f"{input_path.stem}_{platform}_audio.wav"
     try:
         normalize_for_platform(output_path, audio_output, platform, config)
-    except Exception:
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
         pass
 
     file_size_mb = output_path.stat().st_size / (1024 * 1024) if output_path.exists() else 0

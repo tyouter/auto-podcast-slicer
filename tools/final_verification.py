@@ -1,15 +1,16 @@
 import json
 from pathlib import Path
 from pipeline.config import PipelineConfig
-from pipeline.transcribe import parse_funasr_mixed_json, TranscriptResult, TranscriptSegment
-from pipeline.subtitle_merger import process_transcript_to_subtitles
+from pipeline.loader import load_project
+from pipeline.transcribe import TranscriptResult, TranscriptSegment
 from pipeline.subtitle_generator import SubtitleResult
 from pipeline.alignment_verifier import run_full_alignment_verification
 
-config = PipelineConfig()
-transcript = parse_funasr_mixed_json(Path("D:/boke/garden post factory/C0257_full_mixed.json"))
-
-entries, merged = process_transcript_to_subtitles(transcript, config)
+ctx = load_project()
+config = ctx.config
+entries = ctx.entries
+merged = ctx.merged
+transcript = ctx.transcript
 
 subtitle_result = SubtitleResult(entries=entries, format="srt", source_file=transcript.source_file)
 

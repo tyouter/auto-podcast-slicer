@@ -1,11 +1,10 @@
 import json
 import subprocess
-import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
 from pipeline.config import PipelineConfig
+from pipeline.loader import load_project
 from pipeline.transcribe import parse_funasr_mixed_json
 from pipeline.subtitle_merger import process_transcript_to_subtitles
 from pipeline.subtitle_content import (
@@ -14,16 +13,14 @@ from pipeline.subtitle_content import (
     generate_ass_with_rounded_bg,
 )
 
-config = PipelineConfig()
+ctx = load_project()
+config = ctx.config
+entries = ctx.entries
+merged = ctx.merged
+transcript = ctx.transcript
+custom_errata = ctx.custom_errata
+video_source = config.source_video
 output_dir = config.output_dir
-
-mixed_json_path = Path("D:/boke/garden post factory/C0257_full_mixed.json")
-video_source = Path("D:/boke/garden post factory/C0257.MP4")
-corrections_path = Path("config/corrections.yaml")
-
-custom_errata = load_custom_errata(corrections_path)
-transcript = parse_funasr_mixed_json(mixed_json_path)
-entries, merged = process_transcript_to_subtitles(transcript, config)
 
 clip_id = "time_03_time_and_possibility"
 start_s = 1860

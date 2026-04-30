@@ -4,7 +4,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 from pipeline.config import PipelineConfig
-from pipeline.transcribe import parse_funasr_mixed_json, TranscriptResult, TranscriptSegment
+from pipeline.loader import load_project
+from pipeline.transcribe import TranscriptResult, TranscriptSegment
 from pipeline.subtitle_merger import process_transcript_to_subtitles
 from pipeline.subtitle_generator import SubtitleResult
 from pipeline.subtitle_verifier import verify_subtitles
@@ -16,10 +17,8 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 
 def load_transcript() -> TranscriptResult:
-    mixed_json_path = Path("D:/boke/garden post factory/C0257_full_mixed.json")
-    if mixed_json_path.exists():
-        return parse_funasr_mixed_json(mixed_json_path)
-    raise FileNotFoundError(f"Transcript not found: {mixed_json_path}")
+    ctx = load_project()
+    return ctx.transcript
 
 
 def evaluate_config(config: PipelineConfig, transcript: TranscriptResult) -> dict:

@@ -2,8 +2,6 @@ import sys
 import json
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 from autoresearch.skill_research.experiment import SkillExperiment
 from autoresearch.skill_research.strategies import get_all_scenarios, get_all_modifications, get_recommended_modifications
 from autoresearch.skill_research.verifier import SkillVerifier

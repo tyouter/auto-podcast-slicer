@@ -1,10 +1,7 @@
-import sys
-sys.path.insert(0, ".")
-from pipeline.transcribe import parse_funasr_mixed_json
+from pipeline.loader import load_project
 from pipeline.subtitle_content import traditional_to_simplified
-from pathlib import Path
 
-transcript = parse_funasr_mixed_json(Path("D:/boke/garden post factory/C0257_full_mixed.json"))
+transcript = load_project().transcript
 
 keywords = ["时间", "分岔", "平行", "时空", "同时", "可能性", "选择", "命运", "节点",
             "博尔赫斯", "花园", "路径", "不确定", "多重", "维度", "量子",
