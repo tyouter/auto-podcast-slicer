@@ -1,12 +1,18 @@
 import json
+import sys
 import time
 import subprocess
+import argparse
 from pathlib import Path
 from pipeline.config import PipelineConfig
 from pipeline.loader import load_project
 from pipeline.subtitle_content import process_subtitle_content, generate_ass_with_rounded_bg
 
-ctx = load_project()
+parser = argparse.ArgumentParser()
+parser.add_argument("--project", "-p", help="External project directory path", default=None)
+cli_args = parser.parse_args()
+
+ctx = load_project(project_dir=cli_args.project)
 config = ctx.config
 output_dir = config.output_dir
 audio_source = config.source_audio

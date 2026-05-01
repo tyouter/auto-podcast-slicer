@@ -1,0 +1,12 @@
+name: ""           # 项目名称
+description: ""    # 项目描述
+
+sources:
+  transcript: ""   # FunASR转录结果路径（.json）
+  audio: ""        # 音频文件路径（.wav）
+  video: ""        # 视频文件路径（.mp4）
+
+output:
+  base_dir: ""     # 输出目录路径
+
+clips: {}

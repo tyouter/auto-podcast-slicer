@@ -1,13 +1,19 @@
 import gc
+import sys
 import json
 import time
 import subprocess
+import argparse
 from pathlib import Path
 from pipeline.config import PipelineConfig
 from pipeline.loader import load_project
 from pipeline.subtitle_content import process_subtitle_content, generate_ass_with_rounded_bg
 
-ctx = load_project()
+parser = argparse.ArgumentParser()
+parser.add_argument("--project", "-p", help="External project directory path", default=None)
+cli_args = parser.parse_args()
+
+ctx = load_project(project_dir=cli_args.project)
 config = ctx.config
 entries = ctx.entries
 merged = ctx.merged
@@ -16,7 +22,7 @@ transcript = ctx.transcript
 audio_source = config.source_audio
 video_source = config.source_video
 
-OUTPUT_DIR = Path("output/short_videos_v2")
+OUTPUT_DIR = config.output_dir
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 HIGHLIGHTS = config.get_clips("highlights")

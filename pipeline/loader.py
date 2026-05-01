@@ -16,9 +16,14 @@ class ProjectContext:
     custom_errata: dict
 
 
-def load_project(config: PipelineConfig | None = None) -> ProjectContext:
+def load_project(
+    config: PipelineConfig | None = None,
+    project_dir: Path | str | None = None,
+) -> ProjectContext:
     if config is None:
-        config = PipelineConfig()
+        config = PipelineConfig(project_dir=project_dir)
+    elif project_dir is not None:
+        raise ValueError("Provide either config or project_dir, not both")
 
     transcript = parse_funasr_mixed_json(config.source_transcript)
     entries, merged = process_transcript_to_subtitles(transcript, config)
