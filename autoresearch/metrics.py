@@ -26,6 +26,8 @@ class PipelineMetrics:
     subtitle_overlap_count: int = 0
     subtitle_errata_violations: int = 0
     subtitle_style_score: float = 0.0
+    subtitle_overlap_count: int = 0
+    word_level_error_count: int = 0
 
     generation_efficiency_score: float = 0.0
     generation_time_s: float = 0.0
@@ -80,6 +82,10 @@ def compute_metrics_from_quality_report(report: QualityReport) -> PipelineMetric
                 metrics.subtitle_line_length_violations += 1
             elif issue.get("issue_type") == "overlap":
                 metrics.subtitle_overlap_count += 1
+            elif issue.get("issue_type") == "subtitle_overlap":
+                metrics.subtitle_overlap_count += 1
+            elif issue.get("issue_type", "").startswith("word_level_"):
+                metrics.word_level_error_count += 1
             elif issue.get("issue_type") in ("errata_violation", "traditional_chinese", "wrong_name", "wrong_work", "asr_phonetic_error", "semantic_anomaly"):
                 metrics.subtitle_errata_violations += 1
 

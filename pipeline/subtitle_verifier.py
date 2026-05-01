@@ -219,6 +219,8 @@ def verify_subtitles(
     all_issues.extend(check_line_length(entries, config))
     all_issues.extend(check_gap_duration(entries, config))
     all_issues.extend(check_text_quality(entries))
+    all_issues.extend(check_word_level(entries, config))
+    all_issues.extend(check_overlap(entries))
 
     total = len(entries)
     critical = sum(1 for i in all_issues if i.severity == "critical")
@@ -233,3 +235,44 @@ def verify_subtitles(
         passed=passed,
         score=score,
     )
+
+
+def check_word_level(
+    entries: list[SubtitleEntry], config: PipelineConfig
+) -> list[SubtitleIssue]:
+    from pipeline.word_verifier import verify_entries_word_level
+    entry_dicts = [
+        {"text": e.text, "start_s": e.start_ms / 1000, "end_s": e.end_ms / 1000}
+        for e in entries
+    ]
+    results = verify_entries_word_level(entry_dicts)
+    issues = []
+    for i, result in enumerate(results):
+        for wi in result.issues:
+            issues.append(SubtitleIssue(
+                entry_index=entries[i].index,
+                issue_type=f"word_level_{wi.issue_type}",
+                severity=wi.severity,
+                description=f"逐词校验：{wi.description}",
+                suggestion=wi.suggestion,
+            ))
+    return issues
+
+
+def check_overlap(entries: list[SubtitleEntry]) -> list[SubtitleIssue]:
+    from pipeline.word_verifier import check_subtitle_overlap
+    entry_dicts = [
+        {"text": e.text, "start_s": e.start_ms / 1000, "end_s": e.end_ms / 1000}
+        for e in entries
+    ]
+    overlap_issues = check_subtitle_overlap(entry_dicts)
+    issues = []
+    for oi in overlap_issues:
+        issues.append(SubtitleIssue(
+            entry_index=oi.position + 1,
+            issue_type="subtitle_overlap",
+            severity="critical",
+            description=oi.description,
+            suggestion=oi.suggestion,
+        ))
+    return issues

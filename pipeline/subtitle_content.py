@@ -732,7 +732,8 @@ def format_subtitle_single_line(text: str, max_chars: int = 18) -> str:
     break_points = list(re.finditer(r'[，。！？、；：]', text[:max_chars + 3]))
     if break_points:
         pos = break_points[-1].end()
-        return text[:pos]
+        if pos <= max_chars:
+            return text[:pos]
 
     return text[:max_chars]
 
@@ -1306,11 +1307,44 @@ def validate_sentence_by_sentence(entries: list[dict]) -> list[ContentValidation
     return issues
 
 
+def validate_word_level(entries: list[dict], context_window: int = 3) -> list[ContentValidationIssue]:
+    from pipeline.word_verifier import verify_entries_word_level
+    results = verify_entries_word_level(entries, context_window=context_window)
+    issues = []
+    for i, result in enumerate(results):
+        for wi in result.issues:
+            issues.append(ContentValidationIssue(
+                entry_index=entries[i].get("index", i + 1),
+                issue_type=f"word_level_{wi.issue_type}",
+                severity=wi.severity,
+                description=f"逐词校验：{wi.description}",
+                suggestion=wi.suggestion,
+            ))
+    return issues
+
+
+def validate_subtitle_overlap(entries: list[dict]) -> list[ContentValidationIssue]:
+    from pipeline.word_verifier import check_subtitle_overlap
+    overlap_issues = check_subtitle_overlap(entries)
+    issues = []
+    for oi in overlap_issues:
+        issues.append(ContentValidationIssue(
+            entry_index=oi.position + 1,
+            issue_type="subtitle_overlap",
+            severity="critical",
+            description=oi.description,
+            suggestion=oi.suggestion,
+        ))
+    return issues
+
+
 def validate_subtitle_content(
     entries: list[dict],
     max_chars: int = 18,
     render_style: dict | None = None,
     strip_punctuation: bool = True,
+    enable_word_verify: bool = True,
+    enable_overlap_check: bool = True,
 ) -> ContentValidationResult:
     all_issues = []
 
@@ -1326,6 +1360,14 @@ def validate_subtitle_content(
     all_issues.extend(validate_line_break_rules(entries))
     all_issues.extend(validate_contextual_errata(entries))
 
+    if enable_word_verify:
+        word_issues = validate_word_level(entries)
+        all_issues.extend(word_issues)
+
+    if enable_overlap_check:
+        overlap_issues = validate_subtitle_overlap(entries)
+        all_issues.extend(overlap_issues)
+
     if render_style:
         all_issues.extend(validate_render_style(render_style))
 
@@ -1340,6 +1382,7 @@ def validate_subtitle_content(
         "errata_violation", "traditional_chinese", "wrong_name", "wrong_work",
         "asr_phonetic_error", "semantic_anomaly", "contextual_errata",
         "contextual_idiom_errata", "contextual_work_errata",
+        "word_level_error", "subtitle_overlap",
     }
     errata_errors = sum(1 for i in all_issues if i.issue_type in errata_types and i.severity == "critical")
     accuracy_rate = ((total - errata_errors) / total * 100) if total > 0 else 100.0

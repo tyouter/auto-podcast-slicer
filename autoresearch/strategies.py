@@ -164,6 +164,29 @@ STRATEGIES = {
         expected_improvement="逐句审查零容忍，确保不存在任何语义不通的字幕",
         risk_level="low",
     ),
+    "zero_tolerance_subtitle_overlap": StrategyResult(
+        strategy_name="zero_tolerance_subtitle_overlap",
+        description="字幕重叠零容忍：任意两条字幕时间区间不得有交集，重叠即一票否决",
+        config_modifications={
+            "pipeline.subtitle.overlap_check.enabled": True,
+            "pipeline.subtitle.overlap_check.zero_tolerance": True,
+            "pipeline.subtitle.overlap_check.min_gap_s": 0.04,
+        },
+        expected_improvement="消除字幕重叠现象，确保任意时刻最多显示一条字幕",
+        risk_level="low",
+    ),
+    "word_level_verification": StrategyResult(
+        strategy_name="word_level_verification",
+        description="逐词校验：对每句话分词分析，联系前后上下文，精准识别口音/含糊/吞字等ASR错误",
+        config_modifications={
+            "pipeline.subtitle.word_verify.enabled": True,
+            "pipeline.subtitle.word_verify.context_window": 3,
+            "pipeline.subtitle.word_verify.phonetic_check": True,
+            "pipeline.subtitle.word_verify.context_disambiguation": True,
+        },
+        expected_improvement="精准识别口音/含糊/吞字导致的ASR误识别，提升字幕逐词准确率",
+        risk_level="low",
+    ),
 }
 
 
@@ -202,6 +225,13 @@ def get_recommended_strategies(current_metrics: PipelineMetrics) -> list[Strateg
         recommended.append(STRATEGIES["improve_subtitle_errata"])
         recommended.append(STRATEGIES["improve_asr_phonetic_correction"])
         recommended.append(STRATEGIES["improve_sentence_by_sentence_audit"])
+        recommended.append(STRATEGIES["word_level_verification"])
+
+    if current_metrics.subtitle_overlap_count > 0:
+        recommended.append(STRATEGIES["zero_tolerance_subtitle_overlap"])
+
+    if current_metrics.word_level_error_count > 0:
+        recommended.append(STRATEGIES["word_level_verification"])
 
     if current_metrics.generation_efficiency_score < 90:
         recommended.append(STRATEGIES["improve_generation_efficiency"])

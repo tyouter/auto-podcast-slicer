@@ -201,6 +201,34 @@ for clip in clips:
             "text": processed_text,
         })
 
+    merged_entries = []
+    for entry in processed_entries:
+        dur = entry["end_s"] - entry["start_s"]
+        if dur <= 1.0:
+            if merged_entries:
+                prev = merged_entries[-1]
+                combined = prev["text"] + entry["text"]
+                if len(combined) <= 18:
+                    prev["end_s"] = entry["end_s"]
+                    prev["text"] = combined
+                else:
+                    prev["end_s"] = min(prev["end_s"], prev["start_s"] + 1.2)
+                    entry["end_s"] = entry["start_s"] + 1.2
+                    merged_entries.append(entry)
+            else:
+                entry["end_s"] = entry["start_s"] + 1.2
+                merged_entries.append(entry)
+        else:
+            merged_entries.append(entry)
+    for idx, e in enumerate(merged_entries):
+        e["index"] = idx + 1
+    for i in range(len(merged_entries) - 1):
+        if merged_entries[i]["end_s"] > merged_entries[i + 1]["start_s"]:
+            merged_entries[i]["end_s"] = merged_entries[i + 1]["start_s"] - 0.04
+            if merged_entries[i]["end_s"] - merged_entries[i]["start_s"] < 0.5:
+                merged_entries[i]["end_s"] = merged_entries[i + 1]["start_s"] - 0.01
+    processed_entries = merged_entries
+
     # 4. Generate ASS with rounded rectangle background
     ass_output = clip_dir / f"{clip_id}.ass"
     ass_content = generate_ass_with_rounded_bg(
@@ -247,7 +275,7 @@ for clip in clips:
             skipped_count += 1
         else:
             ass_path_escaped = str(ass_output).replace("\\", "/").replace(":", "\\:")
-            vf_chain = f"subtitles='{ass_path_escaped}',scale=1920:1080"
+            vf_chain = f"subtitles='{ass_path_escaped}'"
             cmd = [
                 "ffmpeg", "-y",
                 "-ss", str(start_s), "-to", str(end_s),
@@ -284,7 +312,7 @@ for clip in clips:
             "-ss", str(start_s), "-to", str(end_s),
             "-i", str(video_source),
             "-vf", vf_chain,
-            "-c:v", "libx264", "-preset", "medium", "-crf", "22",
+            "-c:v", "libx264", "-preset", "medium", "-b:v", "5000k",
             "-pix_fmt", "yuv420p",
             "-c:a", "aac", "-b:a", "128k", "-ar", "48000", "-ac", "2",
             str(video_vert_output),
