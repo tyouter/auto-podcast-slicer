@@ -193,6 +193,27 @@ Create `VAULT_ROOT/.claude/managed-projects.yaml` from template (empty registry)
 managed_projects: []
 ```
 
+Also create `VAULT_ROOT/.claude/managed-projects.example.yaml` as the version-controlled template for Agent reference. This file should reflect the current data structure with placeholder values:
+
+```yaml
+managed_projects:
+  - id: <project-id>
+    name: <项目名称>
+    description: <项目描述>
+    path: <本地项目路径>
+    status: active
+    added_at: "<YYYY-MM-DD>"
+    references:
+      - id: <ref-id>
+        name: <引用名称>
+        description: <引用描述>
+        path: <引用路径>
+        type: workshop
+        readonly: true
+```
+
+**同步规则**：当项目信息变更时，必须同步更新 `managed-projects.example.yaml`，确保模板结构与实际数据结构一致（占位值保持不变，字段结构需反映最新状态）。
+
 Ask: "Any projects to track now? (provide paths, or skip)"
 
 If paths provided, add entries with auto-generated IDs.

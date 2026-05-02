@@ -303,11 +303,13 @@ git push origin main
 2. Add new project entry
 3. Generate unique project ID
 4. Set default tracking options
+5. If new fields were introduced, sync `managed-projects.example.yaml` template structure
 
 **Untrack** (`/project-manager untrack <id>`):
 1. Read `managed-projects.yaml`
 2. Remove project entry by ID
 3. Keep historical data (don't delete files)
+4. If removed entry was the last one using certain fields, sync `managed-projects.example.yaml` template structure
 
 **List** (`/project-manager list`):
 Show all managed projects from registry.
@@ -727,7 +729,11 @@ When verification fails: remind the user that deliverable is missing, do not mar
 
 ## Managed Projects Registry File
 
-Located at: `.claude/managed-projects.yaml`
+Located at: `.claude/managed-projects.yaml`（已加入 `.gitignore`，仅本地保留）
+
+模板文件：`.claude/managed-projects.example.yaml`（纳入版本控制，供 Agent 参考）
+
+**同步规则**：当项目信息发生变更时（新增/移除/修改项目条目、引用路径变更等），Agent 必须同步更新 `managed-projects.example.yaml` 模板，确保模板结构与实际数据结构一致。模板中的占位值（如 `<project-id>`、`<本地项目路径>`）保持不变，但字段结构、嵌套层级、新增字段必须反映最新状态。
 
 ```yaml
 managed_projects:
