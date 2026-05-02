@@ -298,8 +298,10 @@ git push origin main
 
 ### Managed Projects Registry
 
+**文件加载规则**：所有读取 `managed-projects.yaml` 的操作，必须先检查文件是否存在。若不存在，则参考 `managed-projects.example.yaml` 模板创建一个空的 `managed-projects.yaml`（`managed_projects: []`），然后继续执行。
+
 **Track** (`/project-manager track <path>`):
-1. Read `managed-projects.yaml`
+1. Read `managed-projects.yaml`（若不存在，按上述规则从 example 模板创建）
 2. Add new project entry
 3. Generate unique project ID
 4. Set default tracking options
@@ -318,7 +320,7 @@ Show all managed projects from registry.
 
 **Read-Only Git Scanning** of managed projects:
 
-1. Read `managed-projects.yaml` for project list
+1. Read `managed-projects.yaml` for project list（若不存在，按上述规则从 example 模板创建）
 2. For each project with `track_status: true`:
    - Run `git status` (safe)
    - Run `git log --oneline -n 10` (safe)

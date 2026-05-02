@@ -187,7 +187,7 @@ Create `VAULT_ROOT/.claude/team-registry.json`:
 
 ### Step 8: Create managed-projects.yaml
 
-Create `VAULT_ROOT/.claude/managed-projects.yaml` from template (empty registry):
+Create `VAULT_ROOT/.claude/managed-projects.yaml` from the `managed-projects.example.yaml` template (empty registry):
 
 ```yaml
 managed_projects: []
@@ -211,6 +211,8 @@ managed_projects:
         type: workshop
         readonly: true
 ```
+
+**文件加载规则**：所有读取 `managed-projects.yaml` 的操作，必须先检查文件是否存在。若不存在，则参考 `managed-projects.example.yaml` 模板创建一个空的 `managed-projects.yaml`（`managed_projects: []`），然后继续执行。
 
 **同步规则**：当项目信息变更时，必须同步更新 `managed-projects.example.yaml`，确保模板结构与实际数据结构一致（占位值保持不变，字段结构需反映最新状态）。
 
