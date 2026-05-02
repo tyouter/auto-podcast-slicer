@@ -25,43 +25,56 @@ output_dir = config.output_dir
 
 clips = [
     {
-        "id": "time_01_garden_intro",
-        "title": "小径分岔的花园：时间在这里分岔",
-        "start_s": 580,
-        "end_s": 750,
-        "description": "从博尔赫斯《小径分岔的花园》引入时间分岔的概念，平行时空与所有可能性同时发生",
+        "id": "clip01_literature",
+        "title": "文学分岔：博尔赫斯与小径分岔的花园",
+        "domain": "文学",
+        "start_s": 640,
+        "end_s": 780,
+        "description": "讨论博尔赫斯《小径分岔的花园》的文学概念，时间分岔的核心隐喻",
     },
     {
-        "id": "time_02_simultaneous",
-        "title": "所有可能性同时发生：时间的分岔点",
-        "start_s": 1530,
-        "end_s": 1720,
-        "description": "深入讨论可能性同时发生，时间分岔的本质——不是选择，而是同时存在",
+        "id": "clip02_time_philosophy",
+        "title": "时间分岔：时间在这里分岔",
+        "domain": "时间哲学",
+        "start_s": 1580,
+        "end_s": 1700,
+        "description": "深入讨论时间分岔的哲学含义，时间不是线性的而是分岔的",
     },
     {
-        "id": "time_03_time_and_possibility",
-        "title": "可能性与时间：分岔到底意味着什么",
-        "start_s": 1860,
-        "end_s": 2050,
-        "description": "可能性到底和时间有什么关系？选择可能性时的分岔意味着什么",
+        "id": "clip03_possibility",
+        "title": "可能性分岔：我们产生了一个分岔",
+        "domain": "可能性",
+        "start_s": 530,
+        "end_s": 680,
+        "description": "讨论可能性的产生，每一次选择都是一个分岔点",
     },
     {
-        "id": "time_04_different_paths",
-        "title": "不同的路径：时间分岔中的选择",
-        "start_s": 2960,
-        "end_s": 3160,
-        "description": "他们选择了不同的路径，所有可能性同时发生，关键时间节点上的分岔",
+        "id": "clip04_ai_art",
+        "title": "艺术分岔：一个艺术家就是一个分岔",
+        "domain": "艺术与AI",
+        "start_s": 3030,
+        "end_s": 3180,
+        "description": "用分岔原理解释艺术创作，AI时代的艺术分岔点",
     },
     {
-        "id": "time_05_critical_node",
-        "title": "关键时间节点：命运的分岔路口",
-        "start_s": 3450,
-        "end_s": 3650,
-        "description": "某个关键的时间节点，命运在此分岔，过去与未来的交汇",
+        "id": "clip05_life_fork",
+        "title": "人生分岔：从分岔的节点看人生",
+        "domain": "人生",
+        "start_s": 3340,
+        "end_s": 3500,
+        "description": "在时间点分岔处的人生选择，命运的分岔节点",
+    },
+    {
+        "id": "clip06_uncertainty",
+        "title": "不确定分岔：没有分岔了吗",
+        "domain": "不确定性",
+        "start_s": 4150,
+        "end_s": 4280,
+        "description": "从分岔的视角看不确定性，看得到分岔与看不到分岔",
     },
 ]
 
-clips_dir = output_dir / "clips_time_bifurcation"
+clips_dir = output_dir / "clips_fencha"
 clips_dir.mkdir(parents=True, exist_ok=True)
 
 results = []
@@ -78,9 +91,9 @@ for clip in clips:
     clip_dir = clips_dir / clip_id
     clip_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"\nProcessing: {clip['title']} [{duration_s/60:.1f}min]")
+    print(f"\nProcessing: {clip['title']} ({clip['domain']}) [{duration_s/60:.1f}min]")
 
-    # 1. Audio clip (WAV) - skip if exists
+    # 1. Audio clip - skip if exists
     audio_output = clip_dir / f"{clip_id}.wav"
     if audio_source.exists() and not audio_output.exists():
         cmd = [
@@ -90,12 +103,15 @@ for clip in clips:
             "-c:a", "pcm_s24le",
             str(audio_output)
         ]
-        subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
-        print(f"  Audio WAV OK: {audio_output.stat().st_size / 1024 / 1024:.1f}MB")
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+        if result.returncode == 0:
+            print(f"  Audio OK: {audio_output.stat().st_size / 1024 / 1024:.1f}MB")
+        else:
+            print(f"  Audio FAIL: {result.stderr[:100]}")
     elif audio_output.exists():
         print(f"  Audio WAV: SKIP (exists)")
 
-    # 2. Audio clip (MP3) - skip if exists
+    # 2. Audio clip as MP3 - skip if exists
     mp3_output = clip_dir / f"{clip_id}.mp3"
     if audio_source.exists() and not mp3_output.exists():
         cmd = [
@@ -105,8 +121,9 @@ for clip in clips:
             "-c:a", "libmp3lame", "-b:a", "192k",
             str(mp3_output)
         ]
-        subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
-        print(f"  Audio MP3 OK: {mp3_output.stat().st_size / 1024:.0f}KB")
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+        if result.returncode == 0:
+            print(f"  MP3 OK: {mp3_output.stat().st_size / 1024:.0f}KB")
     elif mp3_output.exists():
         print(f"  Audio MP3: SKIP (exists)")
 
@@ -192,7 +209,7 @@ for clip in clips:
                 "-ss", str(start_s), "-to", str(end_s),
                 "-i", str(video_source),
                 "-vf", vf_chain,
-                "-c:v", "libx264", "-preset", "medium", "-crf", "22",
+                "-c:v", "libx264", "-preset", "medium", "-crf", "20",
                 "-pix_fmt", "yuv420p",
                 "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
                 str(video_sub_output)
@@ -207,6 +224,7 @@ for clip in clips:
     metadata = {
         "id": clip_id,
         "title": clip["title"],
+        "domain": clip["domain"],
         "description": clip["description"],
         "start_s": start_s,
         "end_s": end_s,
@@ -221,21 +239,22 @@ for clip in clips:
 total_time = time.time() - total_start
 
 summary = {
-    "project": "时间分岔 — 完整切片集",
+    "project": "小径分岔的花园 — 分岔主题切片集",
     "source": "C0257",
     "total_clips": len(results),
     "generated_count": generated_count,
     "skipped_count": skipped_count,
     "total_time_s": round(total_time, 1),
+    "domains": list(set(r["domain"] for r in results)),
     "clips": results,
 }
 
 with open(clips_dir / "summary.json", "w", encoding="utf-8") as f:
     json.dump(summary, f, ensure_ascii=False, indent=2)
 
-print(f"\n{'=' * 60}")
+print(f"\n{'='*60}")
 print(f"DONE: {len(results)} clips in {clips_dir}")
 print(f"Generated: {generated_count}, Skipped: {skipped_count}")
 print(f"Total time: {total_time:.1f}s")
 for r in results:
-    print(f"  {r['id']}: {r['title']} ({r['duration_s'] / 60:.1f}min)")
+    print(f"  {r['id']}: {r['title']} ({r['duration_s']/60:.1f}min)")

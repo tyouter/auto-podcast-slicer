@@ -12,3 +12,4 @@ from pipeline.loudness_normalizer import normalize_loudness
 from pipeline.video_processor import process_version_video
 from pipeline.exporter import export_for_platform, export_all_platforms
 from pipeline.quality_checker import run_quality_check
+from pipeline.clip_processor import process_clip, process_series

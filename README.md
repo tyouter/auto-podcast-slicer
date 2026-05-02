@@ -75,14 +75,11 @@ corrections:
 ### 生成视频
 
 ```bash
-# 生成短视频
-python make_short_videos_v2.py --project /path/to/my-podcast
-
-# 生成全部系列
-python make_full_project.py --project /path/to/my-podcast
+# 生成切片视频（统一CLI）
+python make_clips.py --project /path/to/my-podcast
 
 # 使用内嵌配置（向后兼容）
-python make_short_videos_v2.py
+python make_clips.py
 ```
 
 ### 使用 Claude Code
@@ -102,8 +99,14 @@ garden-autoresearch/
 ├── pipeline/                    # 核心 pipeline
 │   ├── config.py                # 配置管理（支持外部项目）
 │   ├── loader.py                # 项目加载器
+│   ├── text_normalizer.py       # 文本规范化（繁简转换、著→着、标点修正）
+│   ├── subtitle_formatter.py    # 字幕行格式化（断行、禁则、行长控制）
+│   ├── subtitle_renderer.py     # 字幕渲染（圆角背景ASS、毛玻璃滤镜）
+│   ├── errata_engine.py         # 勘误引擎（项目级 errata.yaml + 框架级规则）
+│   ├── content_validator.py     # 内容验证（语义异常检测、上下文纠错）
+│   ├── clip_processor.py        # 统一切片处理
 │   ├── word_verifier.py         # 逐词校验模块
-│   ├── subtitle_content.py      # 字幕处理（勘误/纠错/语义检测）
+│   ├── subtitle_content.py      # 字幕处理入口（整合上述模块）
 │   ├── subtitle_verifier.py     # 字幕验证
 │   ├── subtitle_merger.py       # 字幕合并
 │   ├── quality_checker.py       # 质量检查
@@ -113,6 +116,11 @@ garden-autoresearch/
 │   ├── metrics.py               # 质量指标
 │   └── experiment.py            # 实验运行器
 ├── config/                      # 框架默认配置
+├── projects/                    # 外部项目目录
+│   └── garden-forking-paths/    # 《小径分岔的花园》项目
+│       ├── project.yaml         # 项目配置
+│       ├── errata.yaml          # 项目级勘误表
+│       └── clips.yaml           # 项目级切片定义
 ├── templates/                   # 项目模板
 │   ├── blank/                   # 空白模板
 │   └── garden-forking-paths/    # 示例模板
@@ -121,9 +129,7 @@ garden-autoresearch/
 ├── .claude/skills/              # Claude Code SKILL
 │   ├── video-clip/              # 视频制作团队
 │   └── quality-audit/           # 出品审核
-├── make_short_videos_v2.py      # 短视频生成
-├── make_full_project.py         # 全项目生成
-└── make_wiki_clips.py           # Wiki系列生成
+└── make_clips.py                # 统一切片生成CLI
 ```
 
 ## 质量标准

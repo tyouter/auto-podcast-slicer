@@ -118,9 +118,9 @@ STRATEGIES = {
     ),
     "improve_subtitle_errata": StrategyResult(
         strategy_name="improve_subtitle_errata",
-        description="增强字幕勘误：预定义人名宋锐/余传奇，上下文纠知名导演/作品/常识/成语/错别字",
+        description="增强字幕勘误：预定义项目特定人名，上下文纠知名导演/作品/常识/成语/错别字",
         config_modifications={
-            "pipeline.subtitle.errata.predefined_names": ["宋锐", "余传奇"],
+            "pipeline.subtitle.errata.predefined_names": [],
             "pipeline.subtitle.errata.context_aware": True,
             "pipeline.subtitle.errata.check_directors": True,
             "pipeline.subtitle.errata.check_works": True,

@@ -103,7 +103,7 @@ cmd = [
     "-ss", str(start_s), "-to", str(end_s),
     "-i", str(video_source),
     "-vf", f"subtitles='{ass_path_escaped}'",
-    "-c:v", "libx264", "-preset", "medium", "-crf", "22",
+    "-c:v", "libx264", "-preset", "medium", "-crf", "20",
     "-pix_fmt", "yuv420p",
     "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
     str(video_sub_output)

@@ -39,6 +39,8 @@ class PipelineConfig:
 
         self._project_dir: Path | None = None
         self._project_meta: dict = {}
+        self._errata_config = None
+        self._verification_config: dict = {}
 
         if project_dir is not None:
             self._project_dir = Path(project_dir)
@@ -57,14 +59,16 @@ class PipelineConfig:
         project_data = load_yaml(project_yaml)
         self._project_meta = project_data
 
-        if "clips" in project_data:
-            self._clips = deep_merge(self._clips, project_data["clips"])
+        clips_yaml = project_dir / "clips.yaml"
+        if clips_yaml.exists():
+            project_clips = load_yaml(clips_yaml)
+            if project_clips:
+                self._clips = project_clips
+        elif "clips" in project_data:
+            self._clips = project_data["clips"]
 
         if "sources" in project_data:
-            self._sources = {"sources": deep_merge(
-                self._sources.get("sources", {}),
-                project_data["sources"],
-            )}
+            self._sources = {"sources": project_data["sources"]}
 
         if "pipeline" in project_data:
             self._data = deep_merge(self._data, {"pipeline": project_data["pipeline"]})
@@ -78,6 +82,20 @@ class PipelineConfig:
         if output_base:
             self._data.setdefault("output", {})
             self._data["output"]["base_dir"] = str(Path(output_base))
+
+        self._errata_config = None
+        self._verification_config = project_data.get("verification", {})
+
+    @property
+    def errata_config(self):
+        if self._errata_config is None and self._project_dir is not None:
+            from pipeline.errata_engine import ErrataConfig
+            self._errata_config = ErrataConfig.from_project_dir(self._project_dir)
+        return self._errata_config
+
+    @property
+    def verification_config(self) -> dict:
+        return self._verification_config
 
     @property
     def project_dir(self) -> Path | None:

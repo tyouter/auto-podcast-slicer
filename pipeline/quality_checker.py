@@ -63,15 +63,15 @@ def check_subtitle_files(
     if not srt_dir.exists():
         return None
 
-    srt_files = list(srt_dir.glob("*.srt"))
-    ass_files = list(srt_dir.glob("*.ass"))
-    sub_files = srt_files + ass_files
+    srt_files = list(srt_dir.glob("*.srt")) + list(srt_dir.rglob("*.srt"))
+    ass_files = list(srt_dir.glob("*.ass")) + list(srt_dir.rglob("*.ass"))
+    sub_files = list(set(srt_files + ass_files))
 
     if not sub_files:
         return None
 
     from pipeline.subtitle_generator import SubtitleEntry
-    from pipeline.subtitle_content import validate_subtitle_content, load_custom_errata
+    from pipeline.subtitle_content import validate_subtitle_content as validate_content_facade, load_custom_errata
 
     custom_errata = load_custom_errata(Path("config/corrections.yaml"))
 
@@ -94,19 +94,21 @@ def check_subtitle_files(
             total_score += verification.score
             all_issues.extend(verification.to_dict()["issues"])
 
-            content_result = validate_subtitle_content(
+            content_result = validate_content_facade(
                 [{"text": e.text, "start_s": e.start_ms / 1000, "end_s": e.end_ms / 1000} for e in entries],
                 max_chars=config.get("pipeline.subtitle.max_chars_per_line_cn", 18),
             )
             for issue in content_result.issues:
-                if issue.get("severity") in ("critical", "warning"):
+                if issue.severity in ("critical", "warning"):
                     errata_violations += 1
-                    all_issues.append({"source": "subtitle_content", **issue})
+                    all_issues.append({"source": "subtitle_content", "issue_type": issue.issue_type, "severity": issue.severity, "description": issue.description, "suggestion": issue.suggestion})
 
             if sub_file.suffix == ".ass":
                 with open(sub_file, "r", encoding="utf-8") as f:
                     ass_content = f.read()
-                if "BorderStyle,3" not in ass_content and "3,20" not in ass_content:
+                has_border_style_3 = "BorderStyle,3" in ass_content or ",3," in ass_content.split("BorderStyle")[1].split(",")[0:2] if "BorderStyle" in ass_content else False
+                has_rounded_bg = "\\p1}" in ass_content and "\\1c&H" in ass_content and "\\1a&H" in ass_content
+                if not has_border_style_3 and not has_rounded_bg:
                     style_score -= 5
                 if "Noto Sans SC" not in ass_content:
                     style_score -= 10
@@ -213,6 +215,8 @@ def parse_ass_file(path: Path) -> list:
         text = re.sub(r"\{[^}]*\}", "", text).strip()
         if not text:
             continue
+        if re.match(r"^[mbls]\s", text) or re.match(r"^\d", text):
+            continue
 
         index += 1
         start_ms = parse_ass_time(start_str)
@@ -241,8 +245,8 @@ def check_efficiency(output_dir: Path) -> dict | None:
         try:
             with open(sf, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            total_generated += data.get("generated_count", 0)
-            total_skipped += data.get("skipped_count", 0)
+            total_generated += data.get("generated_count", data.get("generated", 0))
+            total_skipped += data.get("skipped_count", data.get("skipped", 0))
             total_time_s += data.get("total_time_s", 0)
         except (OSError, json.JSONDecodeError, KeyError):
             pass
@@ -304,6 +308,11 @@ def run_quality_check(
     audio_dir = version_dir / "slices"
     srt_dir = version_dir / "srt"
     video_dir = version_dir / "video"
+
+    if not audio_dir.exists():
+        audio_dir = version_dir
+    if not srt_dir.exists():
+        srt_dir = version_dir
 
     audio_results = check_audio_files(audio_dir, config)
     subtitle_result = check_subtitle_files(srt_dir, config)

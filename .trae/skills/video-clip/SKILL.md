@@ -460,12 +460,21 @@ description: "Empowers solo creators with a full video production team's capabil
   - `normalize_for_platform()` — 响度标准化
 
 ### 字幕处理
-- `pipeline/subtitle_content.py`
-  - `process_subtitle_content()` — 逐句内容处理（ASR纠错、繁简转换、语义检测）
+- `pipeline/text_normalizer.py`
+  - `normalize_subtitle_text()` — 文本规范化（繁简转换、著→着、标点修正）
+  - `convert_zhu_to_zhe()` — 著→着智能转换（保护复合词）
+- `pipeline/subtitle_formatter.py`
+  - `format_subtitle_lines()` — 字幕行格式化（断行、禁则处理、行长控制）
+- `pipeline/subtitle_renderer.py`
   - `generate_ass_with_rounded_bg()` — 圆角背景ASS字幕渲染
   - `get_frosted_glass_ffmpeg_filter()` — 毛玻璃滤镜
+- `pipeline/errata_engine.py`
+  - `ErrataEngine` — 勘误引擎（加载项目级 errata.yaml + 框架级纠错规则）
   - `ERRATA_ASR_PHONETIC` — 200+条ASR纠错规则
+- `pipeline/content_validator.py`
+  - `ContentValidator` — 内容验证（语义异常检测、上下文纠错）
   - `SEMANTIC_ANOMALY_PATTERNS` — 语义异常检测模式
+- `pipeline/subtitle_content.py` — 字幕内容处理入口（整合上述模块）
 - `pipeline/subtitle_merger.py` — 字幕合并优化
 - `pipeline/subtitle_generator.py` — 字幕生成与切片提取
 
@@ -480,14 +489,21 @@ description: "Empowers solo creators with a full video production team's capabil
   - `export_audio_only()` — 纯音频导出
 - `pipeline/quality_checker.py` — 质量检查与评分
 
+### 切片处理
+- `pipeline/clip_processor.py`
+  - `process_clips()` — 统一切片处理入口
+  - `process_single_clip()` — 单条切片处理
+
 ### 独立脚本
-- `make_wiki_clips.py` — Wiki知识结构混剪系列
-- `make_fencha_clips.py` — 分岔主题切片集
-- `make_time_clips.py` — 时间分岔主题切片集
+- `make_clips.py` — 统一CLI入口（替代已归档的 make_wiki_clips/make_fencha_clips/make_time_clips）
+
+### 项目配置
+- `projects/{project_name}/project.yaml` — 项目配置（素材源 + 切片定义）
+- `projects/{project_name}/errata.yaml` — 项目级勘误表（人名/作品名/成语/常识纠错）
+- `projects/{project_name}/clips.yaml` — 项目级切片定义（可选，独立于 project.yaml）
 
 ### 配置文件
 - `config/platforms.yaml` — 6平台规格（B站/抖音/YouTube/小宇宙/Apple Podcasts/存档母带）
-- `config/corrections.yaml` — 自定义勘误表
 - `config/quality_standards.yaml` — 质量标准（字幕准确率≥99.9%）
 - `config/default.yaml` — 默认管线配置
 

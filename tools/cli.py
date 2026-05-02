@@ -13,46 +13,186 @@ def cli():
 
 
 @cli.command()
-@click.argument("source", type=click.Path(exists=True))
-@click.option("--config", "-c", type=click.Path(), help="自定义配置文件路径")
-def run(source, config):
-    """运行完整 pipeline"""
-    from tools.run_pipeline import run_full_pipeline
+@click.option("--project-dir", "-p", type=click.Path(exists=True), help="项目目录路径")
+@click.option("--series", "-s", type=str, help="系列名称 (如 highlights, philosophy, deep_thinking)")
+@click.option("--make-vertical/--no-vertical", default=False, help="是否生成竖屏视频")
+@click.option("--make-srt/--no-srt", default=True, help="是否生成SRT字幕")
+@click.option("--max-chars", default=18, help="每行最大字符数")
+def clip(project_dir, series, make_vertical, make_srt, max_chars):
+    """基于项目配置运行剪辑 pipeline"""
+    from pipeline.loader import load_project
+    from pipeline.clip_processor import process_series
 
-    config_obj = PipelineConfig()
-    if config:
-        import yaml
-        with open(config, "r", encoding="utf-8") as f:
-            override = yaml.safe_load(f)
-        config_obj = PipelineConfig(override)
+    if not project_dir:
+        click.echo("请指定项目目录: --project-dir / -p")
+        return
 
-    source_path = Path(source)
-    result = run_full_pipeline(source_path, config_obj)
-    click.echo(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+    config = PipelineConfig(project_dir=Path(project_dir))
+    ctx = load_project(config=config)
+
+    click.echo(f"项目: {config.project_name}")
+    click.echo(f"转录条目: {len(ctx.entries)}")
+    click.echo(f"勘误条目: {len(ctx.custom_errata)}")
+
+    if series:
+        series_names = [series]
+    else:
+        all_clips = config.get_all_clips()
+        series_names = list(all_clips.keys())
+
+    for series_name in series_names:
+        clips = config.get_clips(series_name)
+        if not clips:
+            click.echo(f"系列 '{series_name}' 无切片定义，跳过")
+            continue
+
+        output_dir = config.output_dir / "clips" / series_name
+        click.echo(f"\n处理系列: {series_name} ({len(clips)} 切片)")
+
+        results = process_series(
+            clips=clips,
+            series_dir=output_dir,
+            entries=ctx.entries,
+            audio_source=config.source_audio,
+            video_source=config.source_video,
+            custom_errata=ctx.custom_errata,
+            make_vertical=make_vertical,
+            make_srt=make_srt,
+            skip_existing=True,
+            max_chars=max_chars,
+            strip_punctuation=True,
+            series_name=series_name,
+            project_name=config.project_name,
+        )
+
+        generated = sum(1 for r in results if not r.errors)
+        click.echo(f"  完成: {generated}/{len(results)} 成功")
+
+    click.echo("\n✅ 剪辑完成")
 
 
 @cli.command()
-@click.argument("strategy")
-@click.option("--source", "-s", type=click.Path(), help="源媒体文件路径")
-def experiment(strategy, source):
-    """运行单个实验策略"""
-    from tools.run_experiment import run_single_experiment
+@click.option("--project-dir", "-p", type=click.Path(exists=True), help="项目目录路径")
+@click.option("--platform", "-P", multiple=True, help="目标平台 (bilibili/douyin/youtube/xiaoyuzhou/apple_podcasts/archive)")
+def export(project_dir, platform):
+    """导出到指定平台"""
+    from pipeline.loader import load_project
+    from pipeline.exporter import export_for_platform, export_all_platforms
 
-    source_path = Path(source) if source else None
-    result = run_single_experiment(strategy, source_path)
-    click.echo(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+    if not project_dir:
+        click.echo("请指定项目目录: --project-dir / -p")
+        return
+
+    config = PipelineConfig(project_dir=Path(project_dir))
+    output_dir = config.output_dir
+
+    video_files = list(output_dir.rglob("*_subtitled.mp4"))
+    if not video_files:
+        video_files = list(output_dir.rglob("*.mp4"))
+
+    if not video_files:
+        click.echo("未找到视频文件。请先运行 clip 命令。")
+        return
+
+    sample_video = video_files[0]
+    click.echo(f"导出样本: {sample_video.name}")
+
+    platforms = list(platform) if platform else ["bilibili", "douyin", "youtube", "xiaoyuzhou", "apple_podcasts", "archive"]
+
+    results = export_all_platforms(
+        sample_video,
+        output_dir / "platforms",
+        platforms,
+        config,
+    )
+
+    for result in results:
+        icon = "✅" if result.success else "❌"
+        click.echo(f"  {icon} {result.platform}: {result.file_size_mb:.1f}MB")
 
 
 @cli.command()
-@click.argument("source", type=click.Path(exists=True))
-@click.option("--max-experiments", "-n", default=10, help="最大实验次数")
-def auto(source, max_experiments):
+@click.option("--project-dir", "-p", type=click.Path(exists=True), help="项目目录路径")
+def quality(project_dir):
+    """运行质量检查"""
+    from pipeline.loader import load_project
+    from pipeline.quality_checker import run_quality_check
+
+    if not project_dir:
+        click.echo("请指定项目目录: --project-dir / -p")
+        return
+
+    config = PipelineConfig(project_dir=Path(project_dir))
+    ctx = load_project(config=config)
+
+    for series_name in config.get_all_clips():
+        series_dir = config.output_dir / "clips" / series_name
+        if not series_dir.exists():
+            continue
+
+        report = run_quality_check(series_dir, config, version_key=series_name)
+        icon = "✅" if report.passed else "❌"
+        click.echo(f"  {icon} {series_name}: 分数={report.overall_score:.1f}, 严重={len(report.critical_issues)}, 警告={len(report.warnings)}")
+
+        if report.recommendations:
+            for rec in report.recommendations:
+                click.echo(f"     📋 {rec}")
+
+
+@cli.command()
+@click.option("--project-dir", "-p", type=click.Path(exists=True), help="项目目录路径")
+@click.option("--max-experiments", "-n", default=3, help="最大实验次数")
+def autoresearch(project_dir, max_experiments):
     """自动迭代改进"""
-    from tools.run_experiment import run_auto_iteration
+    from pipeline.loader import load_project
+    from pipeline.quality_checker import run_quality_check
+    from autoresearch.experiment import Experiment
+    from autoresearch.strategies import get_recommended_strategies
+    from autoresearch.metrics import compute_metrics_from_quality_report
 
-    source_path = Path(source)
-    result = run_auto_iteration(source_path, max_experiments)
-    click.echo(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+    if not project_dir:
+        click.echo("请指定项目目录: --project-dir / -p")
+        return
+
+    config = PipelineConfig(project_dir=Path(project_dir))
+    ctx = load_project(config=config)
+
+    for series_name in config.get_all_clips():
+        series_dir = config.output_dir / "clips" / series_name
+        if not series_dir.exists():
+            continue
+
+        baseline = run_quality_check(series_dir, config, version_key=f"auto_{series_name}")
+        baseline_metrics = compute_metrics_from_quality_report(baseline)
+
+        if baseline.passed:
+            click.echo(f"  ✅ {series_name} 已通过质量检查，跳过优化")
+            continue
+
+        click.echo(f"\n🔧 优化 {series_name} (基线分数: {baseline.overall_score:.1f})")
+
+        experiment_dir = config.output_dir / "experiments" / series_name
+        experiment = Experiment(config=config, log_dir=experiment_dir, direction="general_quality")
+        experiment.set_baseline(baseline)
+
+        strategies = get_recommended_strategies(baseline_metrics)
+        for i, strategy in enumerate(strategies[:max_experiments]):
+            click.echo(f"  策略 {i+1}: {strategy.strategy_name}")
+
+            def quality_fn(cfg):
+                return run_quality_check(series_dir, cfg, version_key=f"auto_{series_name}_exp_{i+1}")
+
+            record = experiment.run_experiment(
+                config_modifications=strategy.config_modifications,
+                quality_report_fn=quality_fn,
+                notes=f"Autoresearch for {series_name}: {strategy.strategy_name}",
+            )
+
+            icon = "📈" if record.improved else "📉" if not record.kept else "➡️"
+            click.echo(f"    {icon} improved={record.improved}, kept={record.kept}")
+
+        status = experiment.get_status()
+        click.echo(f"  最终分数: {status.get('current_score', 'N/A')}")
 
 
 @cli.command()
@@ -65,25 +205,9 @@ def status():
     click.echo("Garden AutoResearch — 状态概览")
     click.echo("=" * 60)
 
-    # Check experiments
-    exp_log = output_dir / "experiments" / "experiment_log.json"
-    if exp_log.exists():
-        with open(exp_log, "r", encoding="utf-8") as f:
-            records = json.load(f)
-        click.echo(f"\n📊 实验记录: {len(records)} 次")
-        improvements = sum(1 for r in records if r.get("improved"))
-        click.echo(f"   改进: {improvements} | 退步: {len(records) - improvements}")
-        if records:
-            latest = records[-1]
-            click.echo(f"   最近实验: {latest.get('experiment_id', 'N/A')}")
-            click.echo(f"   改进: {latest.get('improved', False)} | 保留: {latest.get('kept', False)}")
-    else:
-        click.echo("\n📊 实验记录: 无")
-
-    # Check quality reports
-    quality_reports = list(output_dir.glob("clips/*/quality_report.json"))
+    quality_reports = list(output_dir.rglob("quality_report.json"))
     if quality_reports:
-        click.echo(f"\n✅ 质量报告: {len(quality_reports)} 个版本")
+        click.echo(f"\n✅ 质量报告: {len(quality_reports)} 个")
         for qr_path in quality_reports:
             with open(qr_path, "r", encoding="utf-8") as f:
                 report = json.load(f)
@@ -95,14 +219,14 @@ def status():
             status_icon = "✅" if passed else "❌"
             click.echo(f"   {status_icon} {version}: 分数={score:.1f}, 严重={critical}, 警告={warnings}")
     else:
-        click.echo("\n✅ 质量报告: 无（请先运行 pipeline）")
+        click.echo("\n✅ 质量报告: 无（请先运行 clip 命令）")
 
-    # Check output files
-    clips_count = len(list(output_dir.glob("clips/*/*.wav"))) if output_dir.exists() else 0
-    srt_count = len(list(output_dir.glob("srt/*.srt"))) if output_dir.exists() else 0
-    click.echo(f"\n📁 输出文件: {clips_count} 音频 | {srt_count} 字幕")
+    clips_count = len(list(output_dir.rglob("*.wav"))) if output_dir.exists() else 0
+    srt_count = len(list(output_dir.rglob("*.srt"))) if output_dir.exists() else 0
+    ass_count = len(list(output_dir.rglob("*.ass"))) if output_dir.exists() else 0
+    video_count = len(list(output_dir.rglob("*.mp4"))) if output_dir.exists() else 0
+    click.echo(f"\n📁 输出文件: {clips_count} 音频 | {srt_count} SRT | {ass_count} ASS | {video_count} 视频")
 
-    # Available strategies
     from autoresearch.strategies import get_all_strategies
     strategies = get_all_strategies()
     click.echo(f"\n🔧 可用策略: {len(strategies)} 个")
@@ -112,51 +236,51 @@ def status():
 
 
 @cli.command()
-@click.option("--version", "-v", type=str, help="版本名称")
-def report(version):
-    """查看质量报告"""
-    config = PipelineConfig()
-    output_dir = config.output_dir
+@click.option("--project-dir", "-p", type=click.Path(exists=True), help="项目目录路径")
+def audit(project_dir):
+    """对项目输出进行质量审计"""
+    from pipeline.loader import load_project
+    from pipeline.quality_checker import run_quality_check
 
-    if version:
-        report_path = output_dir / "clips" / version / "quality_report.json"
-    else:
-        reports = list(output_dir.glob("clips/*/quality_report.json"))
-        if reports:
-            report_path = reports[0]
-        else:
-            click.echo("未找到质量报告。请先运行 pipeline。")
-            return
-
-    if not report_path.exists():
-        click.echo(f"质量报告不存在: {report_path}")
+    if not project_dir:
+        click.echo("请指定项目目录: --project-dir / -p")
         return
 
-    with open(report_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    config = PipelineConfig(project_dir=Path(project_dir))
+    ctx = load_project(config=config)
 
-    click.echo("=" * 60)
-    click.echo(f"质量报告 — {data.get('version_key', 'N/A')}")
-    click.echo("=" * 60)
-    click.echo(f"\n总分: {data.get('overall_score', 0):.1f}/100")
-    click.echo(f"通过: {'✅ 是' if data.get('passed') else '❌ 否'}")
-    click.echo(f"严重问题: {len(data.get('critical_issues', []))}")
-    click.echo(f"警告: {len(data.get('warnings', []))}")
+    click.echo(f"项目: {config.project_name}")
+    click.echo(f"描述: {config.project_description}")
+    click.echo(f"转录条目: {len(ctx.entries)}")
+    click.echo(f"勘误条目: {len(ctx.custom_errata)}")
 
-    if data.get("recommendations"):
-        click.echo("\n📋 建议:")
-        for rec in data["recommendations"]:
-            click.echo(f"   • {rec}")
+    all_series = config.get_all_clips()
+    click.echo(f"系列: {', '.join(f'{k}({len(v)})' for k, v in all_series.items())}")
 
-    if data.get("critical_issues"):
-        click.echo("\n🔴 严重问题:")
-        for issue in data["critical_issues"]:
-            click.echo(f"   • [{issue.get('issue_type')}] {issue.get('description')}")
+    for series_name, clips in all_series.items():
+        series_dir = config.output_dir / "clips" / series_name
+        if not series_dir.exists():
+            click.echo(f"\n  ⚠️ {series_name}: 未生成")
+            continue
 
-    if data.get("warnings"):
-        click.echo("\n🟡 警告:")
-        for issue in data["warnings"][:10]:
-            click.echo(f"   • [{issue.get('issue_type')}] {issue.get('description')}")
+        report = run_quality_check(series_dir, config, version_key=f"audit_{series_name}")
+        icon = "✅" if report.passed else "❌"
+        click.echo(f"\n  {icon} {series_name}: 分数={report.overall_score:.1f}")
+
+        if report.critical_issues:
+            click.echo(f"     🔴 严重问题 ({len(report.critical_issues)}):")
+            for issue in report.critical_issues[:5]:
+                click.echo(f"        [{issue.get('issue_type')}] {issue.get('description')}")
+
+        if report.warnings:
+            click.echo(f"     🟡 警告 ({len(report.warnings)}):")
+            for issue in report.warnings[:5]:
+                click.echo(f"        [{issue.get('issue_type')}] {issue.get('description')}")
+
+        if report.recommendations:
+            click.echo(f"     📋 建议:")
+            for rec in report.recommendations:
+                click.echo(f"        {rec}")
 
 
 @cli.command()
@@ -178,29 +302,6 @@ def strategies():
         click.echo(f"   参数修改:")
         for key, value in strategy.config_modifications.items():
             click.echo(f"      {key} = {value}")
-
-
-@cli.command()
-@click.argument("source", type=click.Path(exists=True))
-@click.option("--platform", "-p", multiple=True, help="目标平台 (bilibili/douyin/youtube/xiaoyuzhou)")
-def export(source, platform):
-    """导出到指定平台"""
-    from pipeline.exporter import export_for_platform
-
-    config = PipelineConfig()
-    source_path = Path(source)
-
-    platforms = list(platform) if platform else ["bilibili", "youtube"]
-    output_dir = config.output_dir / "exports"
-
-    for plat in platforms:
-        click.echo(f"导出到 {plat}...")
-        result = export_for_platform(source_path, output_dir / plat, plat, config)
-        if result.success:
-            click.echo(f"  ✅ 成功: {result.output_path}")
-            click.echo(f"     大小: {result.file_size_mb:.1f}MB | 时长: {result.duration_s:.1f}s")
-        else:
-            click.echo(f"  ❌ 失败: {', '.join(result.issues)}")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
-project: garden_forking_paths
+project: ""
 
 sources:
-  transcript: "D:/boke/garden post factory/C0257_full_mixed.json"
-  audio: "D:/boke/garden post factory/C0257_mixed_normalized.wav"
-  video: "D:/boke/garden post factory/C0257.MP4"
-  corrections: "config/corrections.yaml"
+  transcript: ""
+  audio: ""
+  video: ""
+  corrections: ""

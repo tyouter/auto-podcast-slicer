@@ -9,8 +9,14 @@ garden-autoresearch/                ← 框架（本仓库）
 ├── pipeline/                       ← 核心 pipeline 模块
 │   ├── config.py                   ← 配置管理（支持外部项目加载）
 │   ├── loader.py                   ← 项目加载器
+│   ├── text_normalizer.py          ← 文本规范化（繁简转换、著→着、标点修正）
+│   ├── subtitle_formatter.py       ← 字幕行格式化（断行、禁则、行长控制）
+│   ├── subtitle_renderer.py        ← 字幕渲染（圆角背景ASS、毛玻璃滤镜）
+│   ├── errata_engine.py            ← 勘误引擎（项目级 errata.yaml + 框架级规则）
+│   ├── content_validator.py        ← 内容验证（语义异常检测、上下文纠错）
+│   ├── clip_processor.py           ← 统一切片处理
 │   ├── word_verifier.py            ← 逐词校验模块
-│   ├── subtitle_content.py         ← 字幕处理（勘误/纠错/逐词校验）
+│   ├── subtitle_content.py         ← 字幕处理入口（整合上述模块）
 │   ├── subtitle_verifier.py        ← 字幕验证
 │   └── ...
 ├── autoresearch/                   ← 自动迭代研究框架
@@ -18,14 +24,17 @@ garden-autoresearch/                ← 框架（本仓库）
 │   ├── default.yaml                ← 默认 pipeline 参数
 │   ├── platforms.yaml              ← 平台规格
 │   └── quality_standards.yaml      ← 质量标准
+├── projects/                       ← 外部项目目录
+│   └── garden-forking-paths/       ← 《小径分岔的花园》项目
+│       ├── project.yaml            ← 项目配置
+│       ├── errata.yaml             ← 项目级勘误表
+│       └── clips.yaml              ← 项目级切片定义
 ├── templates/                      ← 项目模板
 │   ├── blank/                      ← 空白模板
 │   └── garden-forking-paths/       ← 《小径分岔的花园》模板
 ├── tools/
 │   └── project_manager.py          ← 项目管理工具
-├── make_short_videos_v2.py         ← 短视频生成脚本
-├── make_full_project.py            ← 全项目生成脚本
-├── make_wiki_clips.py              ← Wiki系列生成脚本
+├── make_clips.py                   ← 统一切片生成CLI
 └── .claude/skills/                 ← Claude Code SKILL
     ├── video-clip/SKILL.md         ← 视频制作团队 SKILL
     └── quality-audit/SKILL.md      ← 出品审核 SKILL
@@ -83,22 +92,11 @@ python tools/project_manager.py create "我的播客" --template blank --dir /pa
 ### 3. 生成视频
 
 ```bash
-# 生成短视频（高光+哲思+精彩对话）
-python make_short_videos_v2.py --project /path/to/my-podcast
+# 生成切片视频（统一CLI）
+python make_clips.py --project /path/to/my-podcast
 
-# 生成全部系列
-python make_full_project.py --project /path/to/my-podcast
-
-# 生成Wiki系列
-python make_wiki_clips.py --project /path/to/my-podcast
-```
-
-### 4. 使用内嵌项目（向后兼容）
-
-不传 `--project` 时使用框架内置的 config/ 目录配置：
-
-```bash
-python make_short_videos_v2.py
+# 使用内嵌项目（向后兼容）
+python make_clips.py
 ```
 
 ## Claude Code 对话触发

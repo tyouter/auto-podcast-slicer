@@ -1,0 +1,19 @@
+{
+  "project": "小径分岔的花园 — 短视频系列",
+  "audit_time": "2026-04-30",
+  "audit_scope": "output/short_videos_v2 全部17条短视频",
+  "iteration": 2,
+  "overall_score": 88,
+  "audit_result": "PASS_WITH_WARNINGS",
+  "veto_items": [],
+  "tech_score": 93,
+  "video_tech_pct": 100,
+  "audio_tech_pct": 100,
+  "subtitle_tech_pct": 82,
+  "cultural_score": 88,
+  "dist_score": 80,
+  "prod_score": 82,
+  "major_count": 2,
+  "minor_count": 5,
+  "veto_count": 0
+}

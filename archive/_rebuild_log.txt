@@ -11,37 +11,37 @@ Output: D:\boke\garden in parallel - autoresearch\output\short_videos_v2
     ASS OK: 8 entries
     SRT OK
     Video+Sub OK: 55.2MB
-    Vertical OK: 4.4MB
+    Vertical OK: 18.5MB
 
   Processing: H02_no_art_only_artists — 没有所谓的艺术，有的只是一个个艺术家 (0.4min)
     ASS OK: 8 entries
     SRT OK
     Video+Sub OK: 57.5MB
-    Vertical OK: 5.3MB
+    Vertical OK: 15.5MB
 
   Processing: H03_every_choice_is_fork — 每一次选择，都是一个分岔点 (0.6min)
     ASS OK: 10 entries
     SRT OK
-    Video+Sub OK: 97.3MB
-    Vertical OK: 9.7MB
+    Video+Sub OK: 97.4MB
+    Vertical OK: 19.9MB
 
   Processing: H04_fate_crossroad — 命运的分岔路口 (0.7min)
     ASS OK: 9 entries
     SRT OK
     Video+Sub OK: 79.3MB
-    Vertical OK: 5.9MB
+    Vertical OK: 24.2MB
 
   Processing: H05_simultaneous_possibilities — 所有可能性同时发生 (0.6min)
     ASS OK: 11 entries
     SRT OK
     Video+Sub OK: 57.2MB
-    Vertical OK: 4.8MB
+    Vertical OK: 21.1MB
 
   Processing: H06_invisible_forks — 看得到与看不到的分岔 (0.6min)
     ASS OK: 11 entries
     SRT OK
-    Video+Sub OK: 58.7MB
-    Vertical OK: 5.0MB
+    Video+Sub OK: 58.8MB
+    Vertical OK: 20.5MB
 
 ============================================================
 系列：哲思 (6 条)
@@ -50,38 +50,38 @@ Output: D:\boke\garden in parallel - autoresearch\output\short_videos_v2
   Processing: P01_borges_and_time — 博尔赫斯与时间分岔 (2.3min)
     ASS OK: 37 entries
     SRT OK
-    Video+Sub OK: 322.7MB
-    Vertical OK: 27.3MB
+    Video+Sub OK: 322.8MB
+    Vertical OK: 84.5MB
 
   Processing: P02_time_bifurcation_deep — 时间在这里分岔 (2.0min)
     ASS OK: 34 entries
     SRT OK
-    Video+Sub OK: 227.1MB
-    Vertical OK: 19.4MB
+    Video+Sub OK: 227.2MB
+    Vertical OK: 72.7MB
 
   Processing: P03_possibility_means — 可能性意味着什么 (2.5min)
     ASS OK: 41 entries
     SRT OK
-    Video+Sub OK: 384.6MB
-    Vertical OK: 35.6MB
+    Video+Sub OK: 384.7MB
+    Vertical OK: 91.1MB
 
   Processing: P04_artist_as_fork — 艺术家就是分岔 (2.5min)
-    ASS OK: 47 entries
+    ASS OK: 44 entries
     SRT OK
     Video+Sub OK: 367.1MB
-    Vertical OK: 33.4MB
+    Vertical OK: 90.7MB
 
   Processing: P05_life_fork_deep — 从分岔节点看人生 (2.7min)
     ASS OK: 39 entries
     SRT OK
     Video+Sub OK: 301.8MB
-    Vertical OK: 22.4MB
+    Vertical OK: 101.8MB
 
   Processing: P06_uncertainty_deep — 不确定的分岔 (2.2min)
     ASS OK: 35 entries
     SRT OK
     Video+Sub OK: 199.0MB
-    Vertical OK: 15.3MB
+    Vertical OK: 79.1MB
 
 ============================================================
 系列：精彩对话 (5 条)
@@ -91,34 +91,34 @@ Output: D:\boke\garden in parallel - autoresearch\output\short_videos_v2
     ASS OK: 28 entries
     SRT OK
     Video+Sub OK: 260.1MB
-    Vertical OK: 23.2MB
+    Vertical OK: 68.7MB
 
   Processing: D02_naming_the_show — 这个节目叫什么？ (1.7min)
-    ASS OK: 29 entries
+    ASS OK: 28 entries
     SRT OK
     Video+Sub OK: 233.8MB
-    Vertical OK: 21.4MB
+    Vertical OK: 63.9MB
 
   Processing: D03_bird_arrives — 白颊椋鸟来了 (0.6min)
     ASS OK: 8 entries
     SRT OK
     Video+Sub OK: 123.4MB
-    Vertical OK: 12.3MB
+    Vertical OK: 22.8MB
 
   Processing: D04_no_certain_ending — 不追求确定的结局 (1.9min)
     ASS OK: 30 entries
     SRT OK
     Video+Sub OK: 281.6MB
-    Vertical OK: 25.0MB
+    Vertical OK: 73.1MB
 
   Processing: D05_daydream_creation — 利用白日梦去创作 (2.5min)
     ASS OK: 45 entries
     SRT OK
-    Video+Sub OK: 229.5MB
-    Vertical OK: 16.8MB
+    Video+Sub OK: 229.6MB
+    Vertical OK: 90.2MB
 
 ======================================================================
 DONE: 17 clips generated, 0 skipped
-Total time: 1621.1s
+Total time: 1688.7s
 Output: D:\boke\garden in parallel - autoresearch\output\short_videos_v2
 Summary: output\short_videos_v2\summary.json

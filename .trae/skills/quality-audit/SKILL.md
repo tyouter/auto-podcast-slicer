@@ -292,7 +292,7 @@ description: "Professional production quality auditor for video content. Invoke 
       "standard": "≥ 99.9%",
       "actual": "99.2%",
       "severity": "veto",
-      "fix_suggestion": "扩展ERRATA_ASR_PHONETIC，重点检查[具体错误列表]，重新运行勘误流程"
+      "fix_suggestion": "扩展项目 errata.yaml 中的勘误规则，重点检查[具体错误列表]，重新运行勘误流程"
     },
     {
       "dimension": "传播质量",

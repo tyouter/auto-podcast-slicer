@@ -56,7 +56,7 @@ clips:
 ## 第五步：生成视频
 
 ```bash
-python make_short_videos_v2.py --project "../我的播客"
+python make_clips.py --project "../我的播客"
 ```
 
 等待生成完成（约1-3分钟/条）。
@@ -108,6 +108,4 @@ Claude: [启动 video-clip SKILL]
 | `python tools/project_manager.py create "名称"` | 创建项目 |
 | `python tools/project_manager.py templates` | 查看模板 |
 | `python tools/project_manager.py list` | 查看已注册项目 |
-| `python make_short_videos_v2.py --project <dir>` | 生成短视频 |
-| `python make_full_project.py --project <dir>` | 生成全部系列 |
-| `python make_wiki_clips.py --project <dir>` | 生成Wiki系列 |
+| `python make_clips.py --project <dir>` | 生成切片视频 |

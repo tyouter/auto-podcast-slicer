@@ -21,11 +21,18 @@
 .
 ├── program.md              ← 你正在读的文件（Agent 指令）
 ├── pipeline/               ← 核心 pipeline 模块（你主要修改配置参数，不直接修改代码）
-│   ├── config.py           ← 配置管理
+│   ├── config.py           ← 配置管理（支持外部项目加载）
+│   ├── loader.py           ← 项目加载器
 │   ├── ingest.py           ← 素材导入
 │   ├── transcribe.py       ← 语音转录
 │   ├── topic_analysis.py   ← 主题分析
 │   ├── clip_planning.py    ← 切片策划
+│   ├── clip_processor.py   ← 统一切片处理
+│   ├── text_normalizer.py  ← 文本规范化（繁简转换、著→着、标点修正）
+│   ├── subtitle_formatter.py ← 字幕行格式化
+│   ├── subtitle_renderer.py ← 字幕渲染（圆角背景ASS、毛玻璃滤镜）
+│   ├── errata_engine.py    ← 勘误引擎（项目级 errata.yaml + 框架级规则）
+│   ├── content_validator.py ← 内容验证（语义异常检测、上下文纠错）
 │   ├── audio_processor.py  ← 音频处理（切分、交叉淡化、呼吸处理）
 │   ├── subtitle_generator.py ← 字幕生成
 │   ├── subtitle_verifier.py  ← 字幕校验
@@ -43,8 +50,17 @@
 │   ├── default.yaml        ← 默认 pipeline 配置
 │   ├── platforms.yaml      ← 平台规格
 │   └── quality_standards.yaml ← 行业质量标准
+├── projects/               ← 外部项目目录
+│   └── garden-forking-paths/ ← 示例项目
+│       ├── project.yaml    ← 项目配置
+│       ├── errata.yaml     ← 项目级勘误表
+│       └── clips.yaml      ← 项目级切片定义
+├── templates/              ← 项目模板
+│   ├── blank/              ← 空白模板
+│   └── garden-forking-paths/ ← 示例模板
 ├── tools/                  ← CLI 工具
-│   └── cli.py              ← 命令行入口
+│   ├── cli.py              ← 命令行入口
+│   └── project_manager.py  ← 项目管理工具
 └── output/                 ← 输出目录
 ```
 

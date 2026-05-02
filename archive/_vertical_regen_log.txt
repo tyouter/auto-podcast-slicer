@@ -1,0 +1,25 @@
+
+--- 高光 (6 clips) ---
+  H01_time_bifurcates Vertical OK: 18.5MB
+  H02_no_art_only_artists Vertical OK: 15.5MB
+  H03_every_choice_is_fork Vertical OK: 19.9MB
+  H04_fate_crossroad Vertical OK: 24.2MB
+  H05_simultaneous_possibilities Vertical OK: 21.1MB
+  H06_invisible_forks Vertical OK: 20.5MB
+
+--- 哲思 (6 clips) ---
+  P01_borges_and_time Vertical OK: 84.5MB
+  P02_time_bifurcation_deep Vertical OK: 72.7MB
+  P03_possibility_means Vertical OK: 91.0MB
+  P04_artist_as_fork Vertical OK: 90.7MB
+  P05_life_fork_deep Vertical OK: 101.8MB
+  P06_uncertainty_deep Vertical OK: 79.1MB
+
+--- 精彩对话 (5 clips) ---
+  D01_identity_collision Vertical OK: 68.7MB
+  D02_naming_the_show Vertical OK: 63.9MB
+  D03_bird_arrives Vertical OK: 22.8MB
+  D04_no_certain_ending Vertical OK: 73.1MB
+  D05_daydream_creation Vertical OK: 90.2MB
+
+DONE: 17 OK, 0 FAIL, 1027s
