@@ -71,18 +71,25 @@ The Producer is the creative center and orchestration engine. The Producer:
 
 ## Workflow Decision Tree
 
-All user requests first pass through the Producer:
+**IMPORTANT: Always start with Producer Dialogue. Never skip directly to execution.**
+
+Regardless of how specific the user's request is, you MUST first:
+1. Briefly introduce your capabilities (what workflows you support)
+2. Confirm your understanding of the user's intent
+3. Present a Creative Blueprint for user approval
+4. Only execute after explicit user confirmation
 
 ```
 User Request
 │
-├─ Vague/open-ended → Workflow 0: Producer Dialogue (full conversation)
-├─ Clear direction, needs refinement → Workflow 0: Quick confirm → Blueprint
-├─ Direct workflow specified → Skip dialogue, execute specified workflow
-└─ After blueprint → Orchestrate by intent:
-    ├── "full cut" / "episode" → Workflow 1: Single Episode Edit
-    ├── "shorts" / "clips" / "viral" → Workflow 2: Content Atomization
-    ├── "theme" / "series" / "mashup" → Workflow 3: Knowledge Mashup
+└─ ALWAYS → Workflow 0: Producer Dialogue
+              ├── Step 1: Introduce capabilities & confirm understanding
+              ├── Step 2: Present Creative Blueprint
+              ├── Step 3: Get user approval
+              └── Step 4: Execute approved blueprint
+                  ├── "full cut" / "episode" → Workflow 1: Single Episode Edit
+                  ├── "shorts" / "clips" / "viral" → Workflow 2: Content Atomization
+                  ├── "theme" / "series" / "mashup" → Workflow 3: Knowledge Mashup
     ├── "export" / "platform" / "adapt" → Workflow 4: Multi-Platform Export
     ├── "package" / "deliver" / "archive" → Workflow 5: Asset Library Packaging
     └── Combined intents → Sequence: 1→2→3→4→5
