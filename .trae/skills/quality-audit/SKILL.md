@@ -434,3 +434,39 @@ description: "Professional production quality auditor for video content. Invoke 
 | 判定通过/不通过 | 修改任何产出物 |
 | 触发autoresearch | 执行autoresearch |
 | 记录审核历史 | 评价制作人的工作方式 |
+
+---
+
+## 底层能力索引
+
+审核人调用以下模块执行自动化检查：
+
+### 质量检查
+- `pipeline/quality_checker.py`
+  - `QualityReport` — 质量报告数据类（含 overall_score, passed, critical_issues, warnings, recommendations）
+  - `run_quality_check(output_dir, config, version_key)` — 执行完整质量检查，返回 QualityReport
+  - `check_audio_files(output_dir)` — 检查音频文件完整性和规格
+  - `check_subtitle_files(output_dir)` — 检查字幕文件（SRT/ASS），含重叠检测、行长检测、勘误覆盖
+  - `check_efficiency(output_dir)` — 检查生成效率
+  - `generate_recommendations(report)` — 根据检查结果生成修复建议
+
+### 内容验证
+- `pipeline/content_validator.py`
+  - `validate_subtitle_overlap()` — 字幕重叠验证（零容忍，一票否决项）
+  - `validate_errata()` — 勘误覆盖验证
+  - `validate_asr_phonetic()` — ASR语音纠错验证
+  - `validate_subtitle_content()` — 综合内容验证入口
+
+### 响度验证
+- `pipeline/loudness_normalizer.py`
+  - `measure_loudness_detailed()` — 详细响度测量（LUFS/TruePeak/噪底）
+  - `normalize_for_platform()` — 响度标准化至目标平台
+
+### CLI 调用
+- `tools/cli.py`
+  - `python -m tools quality --project-dir <path>` — 命令行质量检查
+  - `python -m tools audit --project-dir <path>` — 命令行出品审核
+
+### 配置文件
+- `config/quality_standards.yaml` — 质量标准定义（字幕准确率≥99.9%、响度目标等）
+- `config/platforms.yaml` — 各平台技术规格（分辨率、码率、LUFS目标）

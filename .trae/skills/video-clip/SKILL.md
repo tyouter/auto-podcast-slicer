@@ -461,20 +461,47 @@ description: "Empowers solo creators with a full video production team's capabil
 
 ### 字幕处理
 - `pipeline/text_normalizer.py`
-  - `normalize_subtitle_text()` — 文本规范化（繁简转换、著→着、标点修正）
+  - `traditional_to_simplified()` — 繁体转简体
   - `convert_zhu_to_zhe()` — 著→着智能转换（保护复合词）
+  - `normalize_chinese()` — 中文文本规范化（繁简+著着+标点）
 - `pipeline/subtitle_formatter.py`
-  - `format_subtitle_lines()` — 字幕行格式化（断行、禁则处理、行长控制）
+  - `format_subtitle_single_line()` — 单行字幕格式化（断行、禁则处理、行长控制）
+  - `add_punctuation_smart()` — 智能标点添加
+  - `clean_subtitle_text()` — 字幕文本清洗
+  - `enforce_single_line()` — 强制单行
+  - `check_line_start_rules()` / `check_line_end_rules()` — 行首行尾禁则检查
+  - `detect_meaningless_words()` — 无意义词检测
+  - `detect_context_anomalies()` — 上下文异常检测
+  - `remove_display_punctuation()` — 移除显示标点
 - `pipeline/subtitle_renderer.py`
   - `generate_ass_with_rounded_bg()` — 圆角背景ASS字幕渲染
   - `get_frosted_glass_ffmpeg_filter()` — 毛玻璃滤镜
+  - `validate_font_license()` — 字体授权验证
+  - `validate_render_style()` — 渲染样式验证
 - `pipeline/errata_engine.py`
-  - `ErrataEngine` — 勘误引擎（加载项目级 errata.yaml + 框架级纠错规则）
-  - `ERRATA_ASR_PHONETIC` — 200+条ASR纠错规则
+  - `ErrataConfig` — 勘误配置（加载项目级 errata.yaml + 框架级纠错规则）
+  - `flatten_errata()` — 扁平化勘误数据
+  - `apply_errata()` — 应用勘误修正
+  - `apply_asr_phonetic_corrections()` — ASR语音纠错
+  - `detect_asr_phonetic_errors()` — 检测ASR语音错误
+  - `validate_errata_entries()` — 验证勘误条目
+  - `validate_semantic_entries()` — 验证语义条目
 - `pipeline/content_validator.py`
-  - `ContentValidator` — 内容验证（语义异常检测、上下文纠错）
-  - `SEMANTIC_ANOMALY_PATTERNS` — 语义异常检测模式
-- `pipeline/subtitle_content.py` — 字幕内容处理入口（整合上述模块）
+  - `ContentValidationResult` — 验证结果（含 issues 列表）
+  - `validate_simplified_chinese()` — 简体中文验证
+  - `validate_punctuation()` — 标点验证
+  - `validate_single_line()` — 单行验证
+  - `validate_line_length()` — 行长验证
+  - `validate_errata()` — 勘误覆盖验证
+  - `validate_asr_phonetic()` — ASR语音纠错验证
+  - `validate_sentence_by_sentence()` — 逐句验证
+  - `validate_context_coherence()` — 上下文连贯性验证
+  - `validate_line_break_rules()` — 断行规则验证
+  - `validate_contextual_errata()` — 上下文勘误验证
+  - `validate_word_level()` — 逐词验证
+  - `validate_subtitle_overlap()` — 字幕重叠验证（零容忍）
+  - `validate_subtitle_content()` — 综合内容验证入口
+- `pipeline/subtitle_content.py` — 字幕内容处理门面模块（整合上述模块，提供 `process_subtitle_content()` 等高层接口）
 - `pipeline/subtitle_merger.py` — 字幕合并优化
 - `pipeline/subtitle_generator.py` — 字幕生成与切片提取
 
@@ -491,11 +518,29 @@ description: "Empowers solo creators with a full video production team's capabil
 
 ### 切片处理
 - `pipeline/clip_processor.py`
-  - `process_clips()` — 统一切片处理入口
-  - `process_single_clip()` — 单条切片处理
+  - `ClipProcessResult` — 切片处理结果数据类
+  - `extract_clip_entries()` — 从转录条目中提取切片区间
+  - `process_clip_subtitles()` — 切片字幕处理（勘误+规范化+格式化）
+  - `merge_short_entries()` — 合并过短条目
+  - `generate_audio()` — 生成切片音频（WAV+MP3）
+  - `generate_ass()` — 生成ASS字幕文件
+  - `generate_srt()` — 生成SRT字幕文件
+  - `generate_video_subtitled()` — 生成横版字幕视频（含超时保护）
+  - `generate_video_vertical()` — 生成竖版视频（模糊背景填充，含超时保护）
+  - `write_metadata()` — 写入元数据JSON
+  - `process_clip()` — 单条切片完整处理入口
+  - `process_series()` — 批量处理整个系列
 
-### 独立脚本
-- `make_clips.py` — 统一CLI入口（替代已归档的 make_wiki_clips/make_fencha_clips/make_time_clips）
+### CLI 工具
+- `tools/cli.py` — Click CLI 入口，命令：
+  - `clip` — 切片处理（指定项目目录+系列）
+  - `export` — 平台导出
+  - `quality` — 质量检查
+  - `autoresearch` — 自动优化迭代
+  - `status` — 项目状态查看
+  - `audit` — 出品审核
+  - `strategies` — 查看可用优化策略
+- `make_clips.py` — 快捷脚本（调用 pipeline API）
 
 ### 项目配置
 - `projects/{project_name}/project.yaml` — 项目配置（素材源 + 切片定义）
