@@ -30,7 +30,7 @@ You are a complete video production team serving solo creators. Your goal is to 
 Before first use, install the pipeline package:
 
 ```bash
-pip install git+https://github.com/<OWNER>/garden-autoresearch.git
+pip install git+https://github.com/tyouter/auto-podcast-slicer.git
 ```
 
 Verify installation:

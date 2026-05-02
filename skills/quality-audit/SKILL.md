@@ -51,7 +51,7 @@ Producer completes work → Auditor reviews independently → Audit Report
 Before first use, install the pipeline package:
 
 ```bash
-pip install git+https://github.com/<OWNER>/garden-autoresearch.git
+pip install git+https://github.com/tyouter/auto-podcast-slicer.git
 ```
 
 ## Audit Dimensions
