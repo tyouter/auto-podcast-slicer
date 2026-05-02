@@ -58,69 +58,70 @@
 
 ## 快速开始
 
+三种方式使用：**Agent SKILL**（对话驱动）、**CLI**（命令行）、**Python API**（编程集成）。详见 [QUICKSTART.md](QUICKSTART.md)。
+
+### 核心架构：意图与执行分离
+
+```
+意图层（需要智能）              执行层（确定性）
+─────────────────────         ─────────────────────
+选什么片段？                   切片、字幕、渲染、导出
+起什么标题？         ──YAML──→  按 start_s/end_s 切割
+提炼什么钩子？                 勘误纠错 + 字幕渲染
+```
+
+- **Agent SKILL**：LLM 自动理解意图 → 生成项目文件 → 调用 pipeline 执行
+- **CLI / Python**：需要预先准备好项目文件（`project.yaml` + `clips.yaml`），pipeline 按定义执行
+
+> CLI 和 Python API 不包含意图理解能力，但项目文件格式是开放的——你可以用任何 LLM Agent 生成这些文件，只要格式正确，pipeline 就能执行。
+
 ### 安装
 
 ```bash
 pip install git+https://github.com/tyouter/auto-podcast-slicer.git
 ```
 
-需要 FFmpeg 在 PATH 中可用。
+需要 FFmpeg 在 PATH 中可用。验证：`garden --help`
 
-验证安装：
+### 方式一：Agent SKILL（推荐）
 
-```bash
-garden --help
-```
-
-### 创建项目
+与 AI Agent 对话，自动编排完整工作流：
 
 ```bash
-# 使用空白模板创建
-python -c "from tools.project_manager import create_project; create_project('my-podcast', 'path/to/media.mp3')"
-
-# 或使用 CLI
-garden status --project-dir /path/to/new-project
-```
-
-### 生成视频
-
-```bash
-# 切片处理
-garden clip --project-dir /path/to/my-podcast --series highlights
-
-# 质量检查
-garden quality --project-dir /path/to/my-podcast
-
-# 出品审核
-garden audit --project-dir /path/to/my-podcast
-
-# 全平台导出
-garden export --project-dir /path/to/my-podcast
-
-# 自动优化迭代
-garden autoresearch --project-dir /path/to/my-podcast
-```
-
-### 通过 Agent 使用
-
-#### Claude Code / Trae
-
-在项目目录下直接对话，SKILL 自动激活：
-
-```
+# Claude Code / Trae — 在项目目录下直接对话
 "帮我从这期播客中剪出5个短视频"
-"审核一下生成的视频质量"
-"创建一个新的播客项目"
+
+# Hermes — 先安装 SKILL
+hermes skills install tyouter/auto-podcast-slicer
+hermes chat -q "Use the video-clip skill to produce 5 short clips"
 ```
 
-#### Hermes
+### 方式二：CLI 命令行
+
+> ⚠️ 需预先准备 `project.yaml` 和 `clips.yaml`，详见 [QUICKSTART.md - 项目文件格式](QUICKSTART.md#项目文件格式)
 
 ```bash
-# 安装 SKILL
-hermes skills install tyouter/auto-podcast-slicer
+garden clip --project-dir /path/to/project --series highlights  # 切片
+garden quality --project-dir /path/to/project                   # 质量检查
+garden audit --project-dir /path/to/project                     # 出品审核
+garden export --project-dir /path/to/project                    # 平台导出
+garden autoresearch --project-dir /path/to/project              # 自动优化
+```
 
-# 对话使用
-hermes chat -q "Use the video-clip skill to produce 5 short clips from my podcast"
+### 方式三：Python API
+
+> ⚠️ 需预先创建 `project.yaml` 和 `clips.yaml`，或通过编程方式构造 `PipelineConfig`
+
+```python
+from pipeline.config import PipelineConfig
+from pipeline.loader import load_project
+from pipeline.clip_processor import process_series
+from pipeline.quality_checker import run_quality_check
+
+config = load_project_config("/path/to/project")
+process_series("/path/to/project", config, "highlights")
+report = run_quality_check("/path/to/project/output", config)
+print(f"Score: {report.overall_score}, Passed: {report.passed}")
 ```
 
 ## 项目结构
