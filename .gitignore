@@ -7,6 +7,11 @@
 .claude/team-registry.json
 .claude/minutes-registry.json
 .claude/feishu-local.yaml
+.claude/managed-projects.yaml
+
+# Project data (local only)
+projects/
+archive/
 
 # AI/IDE caches
 .obsidian/copilot-index-*.json

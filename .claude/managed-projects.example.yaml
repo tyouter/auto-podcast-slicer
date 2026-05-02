@@ -1,0 +1,14 @@
+managed_projects:
+  - id: <project-id>
+    name: <项目名称>
+    description: <项目描述>
+    path: <本地项目路径>
+    status: active
+    added_at: "<YYYY-MM-DD>"
+    references:
+      - id: <ref-id>
+        name: <引用名称>
+        description: <引用描述>
+        path: <引用路径>
+        type: workshop
+        readonly: true
