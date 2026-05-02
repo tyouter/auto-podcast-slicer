@@ -2,13 +2,6 @@
 .env
 *.secret
 
-# Token-bearing configs
-.claude/sync-state.yaml
-.claude/team-registry.json
-.claude/minutes-registry.json
-.claude/feishu-local.yaml
-.claude/managed-projects.yaml
-
 # Project data (local only)
 projects/
 archive/
