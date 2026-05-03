@@ -4,8 +4,6 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from pipeline.text_normalizer import (
-    TRADITIONAL_TO_SIMPLIFIED,
-    TRADITIONAL_ONLY,
     ZHU_KEEP_COMPOUNDS,
     traditional_to_simplified,
     convert_zhu_to_zhe,

@@ -16,6 +16,7 @@ dependencies = [
     "click>=8.0",
     "srt>=3.5",
     "pydub>=0.25",
+    "opencc-python-reimplemented>=0.1.7",
 ]
 
 [project.optional-dependencies]

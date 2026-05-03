@@ -11,7 +11,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from pipeline.config import PipelineConfig
 from pipeline.loader import load_project, ProjectContext
 from pipeline.errata_engine import ErrataConfig, flatten_errata, apply_errata, apply_asr_phonetic_corrections, detect_asr_phonetic_errors
-from pipeline.text_normalizer import traditional_to_simplified, convert_zhu_to_zhe, normalize_chinese, TRADITIONAL_TO_SIMPLIFIED, ZHU_KEEP_COMPOUNDS
+from pipeline.text_normalizer import traditional_to_simplified, convert_zhu_to_zhe, normalize_chinese, ZHU_KEEP_COMPOUNDS
 from pipeline.subtitle_formatter import (
     add_punctuation_smart, clean_subtitle_text, enforce_single_line,
     format_subtitle_single_line, check_line_start_rules, check_line_end_rules,

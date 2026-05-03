@@ -110,7 +110,7 @@ description: "Empowers solo creators with a full video production team's capabil
 │   └── 优先平台：抖音 > YouTube Shorts > Reels
 │
 ├── 意图B：[名称，如"深度思考"]
-│   ├── 类型：工作流1（一期一剪）+ 工作流3（知识混剪）
+│   ├── 类型：工作流1（一期一剪）+ 工作流3（主题系列剪辑）
 │   ├── 剪辑标准：
 │   │   ├── 内容筛选：逻辑递进、概念解释、论证链条
 │   │   ├── 时长范围：5-15分钟
@@ -154,7 +154,7 @@ description: "Empowers solo creators with a full video production team's capabil
 │   │       └── 迭代：重新制作 → 重新审核（最多3轮）
 │   └── 产出：意图A的全部成品
 │
-├── 意图B → 工作流1+3（一期一剪+知识混剪）
+├── 意图B → 工作流1+3（一期一剪+主题系列剪辑）
 │   ├── 参数配置：从意图B的剪辑标准映射
 │   ├── 执行：策划总监+剪辑师+字幕师+声音设计师+包装师
 │   ├── 出品审核：调用 quality-audit SKILL 独立审核
@@ -285,7 +285,7 @@ description: "Empowers solo creators with a full video production team's capabil
 └─ 制作人完成蓝图后，按蓝图编排执行：
     ├── 意图含"完整版"/"精剪"/"一期" → 工作流1：一期一剪
     ├── 意图含"短视频"/"切片"/"引流" → 工作流2：内容原子化
-    ├── 意图含"主题"/"系列"/"混剪"/"知识" → 工作流3：知识混剪
+    ├── 意图含"主题"/"系列"/"混剪" → 工作流3：主题系列剪辑
     ├── 意图含"导出"/"平台"/"适配" → 工作流4：全平台出品
     ├── 意图含"打包"/"交付"/"素材库" → 工作流5：素材库打包
     └── 组合意图 → 按序编排：1→2→3→4→5
@@ -344,23 +344,31 @@ description: "Empowers solo creators with a full video production team's capabil
 
 ---
 
-### 工作流3：知识混剪
+### 工作流3：主题系列剪辑
 
-**场景**：用户有多期素材，需要按知识主题/叙事线索混剪成系列视频。
+**场景**：用户希望按主题/叙事线索将素材组织成系列视频，可参考用户提供的 wiki、大纲、笔记等参考素材来规划切片方案。
+
+**参考素材**：用户可在 `project.yaml` 的 `sources` 中提供以下可选参考素材，帮助制作人更精准地规划切片：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `sources.wiki` | string | Wiki 文件路径（Markdown/YAML），包含知识结构和章节规划 |
+| `sources.outline` | string | 大纲文件路径（Markdown/TXT），包含内容结构和重点标注 |
+| `sources.notes` | string | 笔记文件路径（Markdown/TXT），包含创作想法和素材标注 |
+
+> 这些参考素材仅用于制作人的意图理解阶段，pipeline 不直接读取。制作人参考这些素材后，将规划结果写入 `clips.yaml`，pipeline 按 `start_s`/`end_s` 执行。
 
 **流程**：
-1. **知识图谱构建**：分析全部转录文本，提取——
-   - 核心概念（如"时间分岔""可能性""创作"）
-   - 概念间关系（因果、对比、递进）
-   - 叙事弧线（起承转合）
-2. **章节规划**：按Wiki知识结构组织——
-   - 每章聚焦一个核心概念
+1. **参考素材审阅**：读取用户提供的 wiki/大纲/笔记，理解——
+   - 用户期望的主题结构和章节划分
+   - 重点标注的段落和金句
+   - 素材间的关联和叙事线索
+2. **章节规划**：结合参考素材和转录文本，规划系列结构——
+   - 每章聚焦一个主题
    - 章节间有逻辑递进
    - 每章2-4分钟，独立可看
-3. **素材调度**：跨时间线选取相关片段——
-   - 同一概念在不同时刻的讨论
-   - 跨话题的呼应与对照
-4. **系列制作**：逐章生成视频，每章包含——
+3. **切片方案生成**：为每个章节确定 `start_s`/`end_s`，写入 `clips.yaml`
+4. **系列制作**：逐章调用 pipeline 执行，每章包含——
    - 横版 + 竖版双格式
    - ASS/SRT字幕
    - WAV/MP3音频
@@ -368,7 +376,7 @@ description: "Empowers solo creators with a full video production team's capabil
 5. **系列打包**：生成summary.json，含完整章节索引
 
 **命名规范**：
-- 文件夹：`wiki_01_origin`, `wiki_02_garden_metaphor`, ...
+- 文件夹：`series_01_origin`, `series_02_garden_metaphor`, ...
 - 视频：`{id}_subtitled.mp4`（横版）, `{id}_vertical.mp4`（竖版）
 - 音频：`{id}.wav`, `{id}.mp3`
 - 字幕：`{id}.ass`, `{id}.srt`
@@ -430,8 +438,8 @@ description: "Empowers solo creators with a full video production team's capabil
    │   │   ├── {id}_vertical.mp4
    │   │   └── metadata.json
    │   └── ...
-   ├── wiki_series/            # 知识混剪系列
-   │   ├── wiki_01_{name}/
+   ├── series/                # 主题系列
+   │   ├── series_01_{name}/
    │   └── ...
    ├── platforms/              # 平台适配版
    │   ├── bilibili/

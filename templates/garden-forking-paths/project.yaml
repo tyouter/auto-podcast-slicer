@@ -162,7 +162,7 @@ clips:
       hook: "利用白日梦去创作"
 
   deep_thinking:
-    - id: wiki_01_origin
+    - id: series_01_origin
       title: "缘起：花园中的相遇"
       chapter: "第一章 · 缘起"
       series: 深度思考
@@ -170,7 +170,7 @@ clips:
       start_s: 55
       end_s: 200
 
-    - id: wiki_02_garden_metaphor
+    - id: series_02_garden_metaphor
       title: "隐喻：小径分岔的花园"
       chapter: "第二章 · 隐喻"
       series: 深度思考
@@ -178,7 +178,7 @@ clips:
       start_s: 318
       end_s: 530
 
-    - id: wiki_03_time_bifurcation
+    - id: series_03_time_bifurcation
       title: "分岔：时间在这里分岔"
       chapter: "第三章 · 分岔"
       series: 深度思考
@@ -186,7 +186,7 @@ clips:
       start_s: 580
       end_s: 780
 
-    - id: wiki_04_possibility
+    - id: series_04_possibility
       title: "可能性：我们产生了一个分岔"
       chapter: "第四章 · 可能性"
       series: 深度思考
@@ -194,7 +194,7 @@ clips:
       start_s: 1530
       end_s: 1720
 
-    - id: wiki_05_creation
+    - id: series_05_creation
       title: "创作：从观念出发"
       chapter: "第五章 · 创作"
       series: 深度思考
@@ -202,7 +202,7 @@ clips:
       start_s: 1860
       end_s: 2050
 
-    - id: wiki_06_artist_fork
+    - id: series_06_artist_fork
       title: "艺术家：一个艺术家就是一个分岔"
       chapter: "第六章 · 艺术家"
       series: 深度思考
@@ -210,7 +210,7 @@ clips:
       start_s: 2960
       end_s: 3180
 
-    - id: wiki_07_life_crossroad
+    - id: series_07_life_crossroad
       title: "人生：命运的分岔路口"
       chapter: "第七章 · 人生"
       series: 深度思考
@@ -218,7 +218,7 @@ clips:
       start_s: 3340
       end_s: 3550
 
-    - id: wiki_08_uncertainty
+    - id: series_08_uncertainty
       title: "不确定：看得到与看不到的分岔"
       chapter: "第八章 · 不确定"
       series: 深度思考
@@ -226,7 +226,7 @@ clips:
       start_s: 4150
       end_s: 4320
 
-    - id: wiki_09_dream
+    - id: series_09_dream
       title: "梦境：白日梦与潜意识"
       chapter: "第九章 · 梦境"
       series: 深度思考

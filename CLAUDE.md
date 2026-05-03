@@ -34,7 +34,6 @@ garden-autoresearch/                ← 框架（本仓库）
 │   └── garden-forking-paths/       ← 《小径分岔的花园》模板
 ├── tools/
 │   └── project_manager.py          ← 项目管理工具
-├── make_clips.py                   ← 统一切片生成CLI
 └── .claude/skills/                 ← Claude Code SKILL
     ├── video-clip/SKILL.md         ← 视频制作团队 SKILL
     └── quality-audit/SKILL.md      ← 出品审核 SKILL
@@ -92,11 +91,11 @@ python tools/project_manager.py create "我的播客" --template blank --dir /pa
 ### 3. 生成视频
 
 ```bash
-# 生成切片视频（统一CLI）
-python make_clips.py --project /path/to/my-podcast
+# 使用 garden CLI
+garden clip --project-dir /path/to/my-podcast
 
-# 使用内嵌项目（向后兼容）
-python make_clips.py
+# 或使用 Python API
+python -c "from pipeline.clip_processor import process_series; ..."
 ```
 
 ## Claude Code 对话触发

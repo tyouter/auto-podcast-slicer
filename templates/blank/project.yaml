@@ -4,7 +4,10 @@ description: ""    # 项目描述
 sources:
   transcript: ""   # FunASR转录结果路径（.json）
   audio: ""        # 音频文件路径（.wav）
-  video: ""        # 视频文件路径（.mp4）
+  video: ""        # 视频文件路径（.mp4），可选
+  wiki: ""         # Wiki文件路径（Markdown/YAML），可选，包含知识结构和章节规划
+  outline: ""      # 大纲文件路径（Markdown/TXT），可选，包含内容结构和重点标注
+  notes: ""        # 笔记文件路径（Markdown/TXT），可选，包含创作想法和素材标注
 
 output:
   base_dir: ""     # 输出目录路径

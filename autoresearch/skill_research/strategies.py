@@ -102,31 +102,31 @@ SCENARIOS = {
     "verify_workflow3_knowledge_mashup": VerificationScenario(
         scenario_id="verify_workflow3_knowledge_mashup",
         user_request="按知识主题混剪一系列视频，像Wiki那样组织",
-        expected_workflow="工作流3：知识混剪",
-        description="验证SKILL能否引导Agent按知识结构跨时间线混剪",
+        expected_workflow="工作流3：主题系列剪辑",
+        description="验证SKILL能否引导Agent参考用户素材按主题组织系列视频",
         expected_files=[
-            ExpectedFile("wiki_*/*_subtitled.mp4", True, "每章横版视频"),
-            ExpectedFile("wiki_*/*_vertical.mp4", True, "每章竖版视频"),
-            ExpectedFile("wiki_*/*.ass", True, "每章ASS字幕"),
-            ExpectedFile("wiki_*/*.srt", True, "每章SRT字幕"),
-            ExpectedFile("wiki_*/*.wav", True, "每章WAV音频"),
-            ExpectedFile("wiki_*/*.mp3", False, "每章MP3音频"),
-            ExpectedFile("wiki_*/metadata.json", True, "每章元数据"),
+            ExpectedFile("series_*/*_subtitled.mp4", True, "每章横版视频"),
+            ExpectedFile("series_*/*_vertical.mp4", True, "每章竖版视频"),
+            ExpectedFile("series_*/*.ass", True, "每章ASS字幕"),
+            ExpectedFile("series_*/*.srt", True, "每章SRT字幕"),
+            ExpectedFile("series_*/*.wav", True, "每章WAV音频"),
+            ExpectedFile("series_*/*.mp3", False, "每章MP3音频"),
+            ExpectedFile("series_*/metadata.json", True, "每章元数据"),
             ExpectedFile("summary.json", True, "系列总览含章节索引"),
         ],
         expected_properties=[
             ExpectedProperty("chapter_count", ">=", 3, description="至少3个章节"),
             ExpectedProperty("chapter_duration", "range", 120, tolerance=60, description="每章2-4分钟"),
-            ExpectedProperty("naming_convention", "matches", "wiki_\\d+_", description="Wiki命名规范"),
-            ExpectedProperty("cross_timeline", "equals", True, description="跨时间线素材调度"),
+            ExpectedProperty("naming_convention", "matches", "series_\\d+_", description="系列命名规范"),
+            ExpectedProperty("reference_materials", "equals", True, description="参考了用户提供的素材"),
         ],
         quality_checks=[
-            "知识图谱构建完整",
+            "参考素材审阅完整",
             "章节间有逻辑递进",
             "每章独立可看",
             "命名规范一致",
         ],
-        output_dir_pattern="output/wiki_*/",
+        output_dir_pattern="output/series_*/",
         risk_level="medium",
     ),
     "verify_workflow4_platform_export": VerificationScenario(
@@ -270,7 +270,7 @@ MODIFICATIONS = {
 用户请求
 ├─ 包含"完整版"/"精剪"/"一期" → 工作流1：一期一剪
 ├─ 包含"短视频"/"切片"/"拆"/"抖音"/"Shorts"/"Reels" → 工作流2：内容原子化
-├─ 包含"主题"/"系列"/"混剪"/"知识"/"Wiki" → 工作流3：知识混剪
+├─ 包含"主题"/"系列"/"混剪" → 工作流3：主题系列剪辑
 ├─ 包含"导出"/"平台"/"B站"/"YouTube"/"适配" → 工作流4：全平台出品
 ├─ 包含"打包"/"交付"/"全部产出"/"素材库" → 工作流5：素材库打包
 ├─ 模糊请求（如"处理一下"）→ 主动询问：您需要哪种处理？
@@ -485,7 +485,7 @@ output/{project_name}/platforms/
             "content": """**打包输出清单**：
 - `full_episode/` — 完整版视频（横版+竖版+音频+字幕）
 - `clips/` — 短视频切片（每个clip独立文件夹）
-- `wiki_series/` — 知识混剪系列（如适用）
+- `series/` — 主题系列（如适用）
 - `platforms/` — 各平台适配版本（bilibili/douyin/youtube/podcast/archive）
 - `assets/subtitles/` — 全部字幕文件集合
 - `assets/audio/` — 全部音频文件集合

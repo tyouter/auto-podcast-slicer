@@ -116,7 +116,7 @@ def generate_ass_with_rounded_bg(
     font_name: str = "Noto Sans SC",
     font_size: int = 104,
     bg_color: str = "1A1A1A",
-    bg_alpha: int = 38,
+    bg_alpha: int = 128,
     text_color: str = "FFFFFF",
     corner_radius: int = 24,
     padding_h: int = 40,

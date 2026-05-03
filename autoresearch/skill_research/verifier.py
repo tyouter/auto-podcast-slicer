@@ -53,7 +53,7 @@ class SkillVerifier:
         workflow_keywords = {
             "工作流1：一期一剪": ["一期一剪", "精剪", "完整版", "full_episode"],
             "工作流2：内容原子化": ["内容原子化", "短视频", "切片", "高光", "atomization"],
-            "工作流3：知识混剪": ["知识混剪", "Wiki", "主题", "章节", "mashup"],
+            "工作流3：主题系列剪辑": ["主题系列剪辑", "主题", "系列", "章节", "mashup"],
             "工作流4：全平台出品": ["全平台出品", "平台适配", "导出", "platform"],
             "工作流5：素材库打包": ["素材库打包", "打包", "交付", "版权声明", "packaging"],
         }
@@ -96,8 +96,8 @@ class SkillVerifier:
         "has_hook": ["钩子", "hook", "前3秒", "注意力"],
         "chapter_count": ["章节", "章", "3个"],
         "chapter_duration": ["每章", "2-4分钟", "2～4"],
-        "naming_convention": ["命名", "wiki_", "规范"],
-        "cross_timeline": ["跨时间线", "跨", "素材调度"],
+        "naming_convention": ["命名", "series_", "规范"],
+        "reference_materials": ["参考素材", "wiki", "大纲", "笔记"],
         "bilibili_resolution": ["B站", "bilibili", "1920x1080"],
         "douyin_resolution": ["抖音", "douyin", "1080x1920"],
         "youtube_resolution": ["YouTube", "1920x1080"],
@@ -168,7 +168,7 @@ class SkillVerifier:
         "COPYRIGHT.md": ["版权", "COPYRIGHT", "声明"],
         "RELEASE_CARDS.json": ["发布信息卡", "RELEASE_CARDS"],
         "summary.json": ["总览", "summary", "项目总览"],
-        "wiki_series/": ["知识混剪", "wiki", "Wiki", "章节"],
+        "series/": ["主题系列", "series", "章节"],
         "assets/": ["素材", "assets", "素材库"],
         "bilibili/": ["B站", "bilibili"],
         "douyin/": ["抖音", "douyin"],

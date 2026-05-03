@@ -3,7 +3,6 @@ from pipeline.text_normalizer import (
     traditional_to_simplified,
     convert_zhu_to_zhe,
     normalize_chinese,
-    TRADITIONAL_TO_SIMPLIFIED,
     ZHU_KEEP_COMPOUNDS,
 )
 

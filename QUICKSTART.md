@@ -54,6 +54,9 @@ sources:
   transcript: "/path/to/transcript.json"   # FunASR 转录结果（.json）
   audio: "/path/to/audio.wav"              # 音频文件（.wav）
   video: "/path/to/video.mp4"              # 视频文件（.mp4，可选）
+  wiki: "/path/to/wiki.md"                 # Wiki 文件（Markdown/YAML，可选）
+  outline: "/path/to/outline.md"           # 大纲文件（Markdown/TXT，可选）
+  notes: "/path/to/notes.md"               # 笔记文件（Markdown/TXT，可选）
 
 output:
   base_dir: "/path/to/output"              # 输出目录，可选，默认 <project_dir>/output
@@ -66,6 +69,9 @@ output:
 | `sources.transcript` | string | ✅ | FunASR mixed 格式的 JSON 转录文件，包含逐条带时间戳的文本 |
 | `sources.audio` | string | ✅ | 原始音频，用于切割输出 WAV/MP3 |
 | `sources.video` | string | ⚪ | 原始视频，用于烧录字幕和生成竖版。如不提供则只输出音频和字幕 |
+| `sources.wiki` | string | ⚪ | Wiki 文件（Markdown/YAML），包含知识结构和章节规划，供 Agent 参考规划切片方案 |
+| `sources.outline` | string | ⚪ | 大纲文件（Markdown/TXT），包含内容结构和重点标注，供 Agent 参考规划切片方案 |
+| `sources.notes` | string | ⚪ | 笔记文件（Markdown/TXT），包含创作想法和素材标注，供 Agent 参考规划切片方案 |
 
 ### 必需文件：clips.yaml
 
@@ -260,7 +266,7 @@ hermes chat -q "Use the quality-audit skill to review the output"
 | 制作人对话 | "我想做点东西" | 创作蓝图 |
 | 一期一剪 | "出一期精剪" | 横版+竖版长视频 |
 | 内容原子化 | "剪几个短视频" | 多条独立短视频 |
-| 知识混剪 | "做个主题系列" | 跨期主题系列 |
+| 主题系列剪辑 | "做个主题系列" | 主题系列视频 |
 | 全平台出品 | "导出到各平台" | 6 平台适配版本 |
 | 素材库打包 | "打包交付" | 标准化目录 |
 

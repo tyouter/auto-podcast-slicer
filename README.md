@@ -154,10 +154,9 @@ auto-podcast-slicer/
 │   ├── platforms.yaml           # 6 平台规格
 │   └── quality_standards.yaml   # 质量标准
 ├── templates/                   # 项目模板
-├── tools/
-│   ├── cli.py                   # garden CLI 入口
-│   └── project_manager.py       # 项目管理工具
-└── make_clips.py                # 快捷脚本
+└── tools/
+    ├── cli.py                   # garden CLI 入口
+    └── project_manager.py       # 项目管理工具
 ```
 
 ## 质量标准
