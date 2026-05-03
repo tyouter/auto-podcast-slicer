@@ -3,7 +3,12 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["pipeline*", "autoresearch*", "tools*"]
+include = ["pipeline*", "autoresearch*", "tools*", "skills*", "config*", "templates*"]
+
+[tool.setuptools.package-data]
+skills = ["**/*.md", "**/*.yaml", "**/*.yml"]
+config = ["**/*.yaml", "**/*.yml"]
+templates = ["**/*.yaml", "**/*.yml"]
 
 [project]
 name = "garden-autoresearch"
