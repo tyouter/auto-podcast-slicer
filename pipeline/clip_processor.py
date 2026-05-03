@@ -7,6 +7,7 @@ from typing import Optional
 
 from pipeline.config import PipelineConfig
 from pipeline.subtitle_content import process_subtitle_content, generate_ass_with_rounded_bg
+from pipeline.subtitle_renderer import get_frosted_glass_ffmpeg_filter
 
 
 @dataclass
@@ -59,6 +60,8 @@ def extract_clip_entries(
             adjusted_end = min(entry_end_s, end_s) - start_s
         else:
             continue
+        if adjusted_end - adjusted_start < 0.5:
+            continue
         clip_entries_raw.append({
             "index": 0,
             "start_s": adjusted_start,
@@ -106,9 +109,9 @@ def merge_short_entries(
     extend_duration_s: float = 1.2,
 ) -> list[dict]:
     merged_entries = []
-    for entry in processed_entries:
+    for i, entry in enumerate(processed_entries):
         dur = entry["end_s"] - entry["start_s"]
-        if dur <= min_duration_s:
+        if dur < min_duration_s:
             if merged_entries:
                 prev = merged_entries[-1]
                 combined = prev["text"] + entry["text"]
@@ -120,17 +123,47 @@ def merge_short_entries(
                     entry["end_s"] = entry["start_s"] + extend_duration_s
                     merged_entries.append(entry)
             else:
+                next_entry = processed_entries[i + 1] if i + 1 < len(processed_entries) else None
+                if next_entry:
+                    combined = entry["text"] + next_entry["text"]
+                    if len(combined) <= max_chars:
+                        entry["end_s"] = next_entry["end_s"]
+                        entry["text"] = combined
+                        processed_entries[i + 1] = {
+                            "index": 0,
+                            "start_s": next_entry["start_s"],
+                            "end_s": next_entry["end_s"],
+                            "text": "",
+                        }
+                        merged_entries.append(entry)
+                        continue
                 entry["end_s"] = entry["start_s"] + extend_duration_s
                 merged_entries.append(entry)
         else:
-            merged_entries.append(entry)
+            if entry["text"]:
+                merged_entries.append(entry)
+    merged_entries = [e for e in merged_entries if e["text"]]
     for idx, e in enumerate(merged_entries):
         e["index"] = idx + 1
     for i in range(len(merged_entries) - 1):
         if merged_entries[i]["end_s"] > merged_entries[i + 1]["start_s"]:
-            merged_entries[i]["end_s"] = merged_entries[i + 1]["start_s"] - 0.04
-            if merged_entries[i]["end_s"] - merged_entries[i]["start_s"] < 0.5:
-                merged_entries[i]["end_s"] = merged_entries[i + 1]["start_s"] - 0.01
+            gap = merged_entries[i + 1]["start_s"] - merged_entries[i]["start_s"]
+            if gap >= 1.0:
+                merged_entries[i]["end_s"] = merged_entries[i + 1]["start_s"] - 0.04
+            else:
+                mid = (merged_entries[i]["start_s"] + merged_entries[i + 1]["start_s"]) / 2
+                merged_entries[i]["end_s"] = mid - 0.02
+                merged_entries[i + 1]["start_s"] = mid + 0.02
+    for i in range(len(merged_entries)):
+        dur = merged_entries[i]["end_s"] - merged_entries[i]["start_s"]
+        if dur < min_duration_s:
+            if i + 1 < len(merged_entries):
+                merged_entries[i]["end_s"] = min(
+                    merged_entries[i]["start_s"] + min_duration_s,
+                    merged_entries[i + 1]["start_s"] - 0.04,
+                )
+            else:
+                merged_entries[i]["end_s"] = merged_entries[i]["start_s"] + min_duration_s
     return merged_entries
 
 
@@ -185,7 +218,7 @@ def generate_ass(
     font_name: str = "Noto Sans SC",
     font_size: int = 104,
     bg_color: str = "1A1A1A",
-    bg_alpha: int = 38,
+    bg_alpha: int = 128,
     text_color: str = "FFFFFF",
     corner_radius: int = 24,
     padding_h: int = 40,
@@ -241,13 +274,17 @@ def generate_video_subtitled(
     crf: int = 20,
     audio_bitrate: str = "192k",
     timeout_s: int = 600,
+    video_width: int = 3840,
+    video_height: int = 2160,
+    output_width: int = 1920,
+    output_height: int = 1080,
 ) -> bool:
     if not video_source.exists():
         return False
     if skip_existing and output_path.exists():
         return True
     ass_path_escaped = str(ass_path).replace("\\", "/").replace(":", "\\:")
-    vf_chain = f"subtitles='{ass_path_escaped}'"
+    vf_chain = f"subtitles='{ass_path_escaped}',scale={output_width}:{output_height}"
     cmd = [
         "ffmpeg", "-y",
         "-ss", str(start_s), "-to", str(end_s),
@@ -289,11 +326,11 @@ def generate_video_vertical(
         output_path.unlink()
     ass_path_escaped = str(ass_path).replace("\\", "/").replace(":", "\\:")
     vf_chain = (
-        f"subtitles='{ass_path_escaped}',"
         f"split[bg][fg];"
         f"[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=40[blurred];"
         f"[fg]scale=1080:-2[scaled];"
-        f"[blurred][scaled]overlay=(W-w)/2:(H-h)/2"
+        f"[blurred][scaled]overlay=(W-w)/2:(H-h)/2[v];"
+        f"[v]subtitles='{ass_path_escaped}'"
     )
     cmd = [
         "ffmpeg", "-y",
@@ -402,9 +439,24 @@ def process_clip(
         )
 
         if make_vertical:
+            vertical_style = {
+                "video_width": 1080,
+                "video_height": 1920,
+                "font_name": "Noto Sans SC",
+                "font_size": 72,
+                "bg_color": "1A1A1A",
+                "bg_alpha": 192,
+                "text_color": "FFFFFF",
+                "corner_radius": 16,
+                "padding_h": 28,
+                "padding_v": 14,
+                "margin_v": 80,
+            }
+            ass_vert_output = clip_dir / f"{clip_id}_vertical.ass"
+            generate_ass(processed_entries, ass_vert_output, **vertical_style)
             video_vert_output = clip_dir / f"{clip_id}_vertical.mp4"
             result.video_vertical_ok = generate_video_vertical(
-                video_source, ass_output, start_s, end_s, video_vert_output,
+                video_source, ass_vert_output, start_s, end_s, video_vert_output,
             )
 
     result.metadata_ok = write_metadata(clip, processed_entries, clip_dir, extra_metadata)
