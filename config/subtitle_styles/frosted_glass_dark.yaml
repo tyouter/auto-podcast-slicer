@@ -1,0 +1,28 @@
+name: "frosted_glass_dark"
+description: "毛玻璃暗色风格 - 灰黑圆角背景 + 白色文字"
+horizontal:
+  video_width: 3840
+  video_height: 2160
+  output_width: 1920
+  output_height: 1080
+  font_name: "Noto Sans SC"
+  font_size: 104
+  bg_color: "1A1A1A"
+  bg_alpha: 128
+  text_color: "FFFFFF"
+  corner_radius: 24
+  padding_h: 40
+  padding_v: 20
+  margin_v: 90
+vertical:
+  video_width: 1080
+  video_height: 1920
+  font_name: "Noto Sans SC"
+  font_size: 72
+  bg_color: "1A1A1A"
+  bg_alpha: 192
+  text_color: "FFFFFF"
+  corner_radius: 16
+  padding_h: 28
+  padding_v: 14
+  margin_v: 80

@@ -91,17 +91,7 @@ pipeline:
       errata_enabled: true
       single_line: true
     render_style:
-      mode: frosted_glass_dark
-      font_name: "Noto Sans SC"
-      font_size: 20
-      font_color: "white"
-      bg_color: "dark_gray"
-      bg_opacity: 0.60
-      blur_radius: 15
-      position: "bottom_center"
-      margin_v: 55
-      alignment: 2
-      single_line: true
+      name: frosted_glass_dark
 
   audio_verification:
     loudness:

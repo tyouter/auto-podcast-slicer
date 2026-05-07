@@ -1,4 +1,8 @@
-import re
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pipeline.subtitle_style import OrientationStyle
 
 
 COMMERCIAL_FREE_FONTS = {
@@ -109,6 +113,16 @@ def validate_render_style(style: dict) -> list[dict]:
     return issues
 
 
+def generate_ass_with_style(
+    entries: list[dict],
+    style: OrientationStyle,
+) -> str:
+    return generate_ass_with_rounded_bg(
+        entries=entries,
+        **style.to_ass_params(),
+    )
+
+
 def generate_ass_with_rounded_bg(
     entries: list[dict],
     video_width: int = 3840,
@@ -122,7 +136,22 @@ def generate_ass_with_rounded_bg(
     padding_h: int = 40,
     padding_v: int = 20,
     margin_v: int = 90,
+    style: OrientationStyle | None = None,
 ) -> str:
+    if style is not None:
+        params = style.to_ass_params()
+        video_width = params["video_width"]
+        video_height = params["video_height"]
+        font_name = params["font_name"]
+        font_size = params["font_size"]
+        bg_color = params["bg_color"]
+        bg_alpha = params["bg_alpha"]
+        text_color = params["text_color"]
+        corner_radius = params["corner_radius"]
+        padding_h = params["padding_h"]
+        padding_v = params["padding_v"]
+        margin_v = params["margin_v"]
+
     bg_alpha_hex = f"{bg_alpha:02X}"
     metrics = _NOTO_SANS_SC_METRICS
     descent = int(font_size * metrics["descent_ratio"])
@@ -171,13 +200,14 @@ def generate_ass_with_rounded_bg(
 
         r = min(corner_radius, bg_w // 2, bg_h // 2)
 
-        drawing = _ass_rounded_rect_drawing(bg_w, bg_h, r)
+        if bg_alpha > 0 and (padding_h > 0 or padding_v > 0):
+            drawing = _ass_rounded_rect_drawing(bg_w, bg_h, r)
+            ass += (
+                f"Dialogue: 0,{start},{end},Default,,0,0,0,,"
+                f"{{\\an7\\pos({bg_x},{bg_y})\\1c&H{bg_color}&\\1a&H{bg_alpha_hex}&"
+                f"\\3a&HFF&\\4a&HFF&\\p1}}{drawing}{{\\p0}}\n"
+            )
 
-        ass += (
-            f"Dialogue: 0,{start},{end},Default,,0,0,0,,"
-            f"{{\\an7\\pos({bg_x},{bg_y})\\1c&H{bg_color}&\\1a&H{bg_alpha_hex}&"
-            f"\\3a&HFF&\\4a&HFF&\\p1}}{drawing}{{\\p0}}\n"
-        )
         ass += (
             f"Dialogue: 1,{start},{end},Default,,0,0,0,,"
             f"{{\\an2\\pos({cx},{text_pos_y})}}{text}\n"

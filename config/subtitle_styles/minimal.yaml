@@ -1,0 +1,36 @@
+name: "minimal"
+description: "极简风格 - 无背景纯白文字 + 细描边"
+horizontal:
+  video_width: 3840
+  video_height: 2160
+  output_width: 1920
+  output_height: 1080
+  font_name: "Noto Sans SC"
+  font_size: 96
+  bg_color: "000000"
+  bg_alpha: 0
+  text_color: "FFFFFF"
+  corner_radius: 0
+  padding_h: 0
+  padding_v: 0
+  margin_v: 80
+  outline_width: 4
+  outline_color: "000000"
+  shadow_enabled: true
+  shadow_depth: 2
+vertical:
+  video_width: 1080
+  video_height: 1920
+  font_name: "Noto Sans SC"
+  font_size: 64
+  bg_color: "000000"
+  bg_alpha: 0
+  text_color: "FFFFFF"
+  corner_radius: 0
+  padding_h: 0
+  padding_v: 0
+  margin_v: 70
+  outline_width: 3
+  outline_color: "000000"
+  shadow_enabled: true
+  shadow_depth: 2

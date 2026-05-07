@@ -41,6 +41,7 @@ class PipelineConfig:
         self._project_meta: dict = {}
         self._errata_config = None
         self._verification_config: dict = {}
+        self._subtitle_style = None
 
         if project_dir is not None:
             self._project_dir = Path(project_dir)
@@ -96,6 +97,17 @@ class PipelineConfig:
     @property
     def verification_config(self) -> dict:
         return self._verification_config
+
+    @property
+    def subtitle_style(self):
+        if self._subtitle_style is None:
+            from pipeline.subtitle_style import load_style, get_default_style
+            style_name = self.get("pipeline.subtitle.render_style.name", "frosted_glass_dark")
+            try:
+                self._subtitle_style = load_style(style_name)
+            except FileNotFoundError:
+                self._subtitle_style = get_default_style()
+        return self._subtitle_style
 
     @property
     def project_dir(self) -> Path | None:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import gc
 import json
 import subprocess
@@ -6,8 +8,9 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from pipeline.config import PipelineConfig
-from pipeline.subtitle_content import process_subtitle_content, generate_ass_with_rounded_bg
-from pipeline.subtitle_renderer import get_frosted_glass_ffmpeg_filter
+from pipeline.subtitle_content import process_subtitle_content
+from pipeline.subtitle_renderer import generate_ass_with_rounded_bg, generate_ass_with_style
+from pipeline.subtitle_style import SubtitleStyle, OrientationStyle, load_style, get_default_style
 
 
 @dataclass
@@ -213,32 +216,13 @@ def generate_audio(
 def generate_ass(
     processed_entries: list[dict],
     output_path: Path,
-    video_width: int = 3840,
-    video_height: int = 2160,
-    font_name: str = "Noto Sans SC",
-    font_size: int = 104,
-    bg_color: str = "1A1A1A",
-    bg_alpha: int = 128,
-    text_color: str = "FFFFFF",
-    corner_radius: int = 24,
-    padding_h: int = 40,
-    padding_v: int = 20,
-    margin_v: int = 90,
+    style: OrientationStyle | None = None,
+    **kwargs,
 ) -> bool:
-    ass_content = generate_ass_with_rounded_bg(
-        entries=processed_entries,
-        video_width=video_width,
-        video_height=video_height,
-        font_name=font_name,
-        font_size=font_size,
-        bg_color=bg_color,
-        bg_alpha=bg_alpha,
-        text_color=text_color,
-        corner_radius=corner_radius,
-        padding_h=padding_h,
-        padding_v=padding_v,
-        margin_v=margin_v,
-    )
+    if style is not None:
+        ass_content = generate_ass_with_style(entries=processed_entries, style=style)
+    else:
+        ass_content = generate_ass_with_rounded_bg(entries=processed_entries, **kwargs)
     output_path.write_text(ass_content, encoding="utf-8")
     return output_path.exists()
 
@@ -274,8 +258,6 @@ def generate_video_subtitled(
     crf: int = 20,
     audio_bitrate: str = "192k",
     timeout_s: int = 600,
-    video_width: int = 3840,
-    video_height: int = 2160,
     output_width: int = 1920,
     output_height: int = 1080,
 ) -> bool:
@@ -379,6 +361,32 @@ def write_metadata(
     return True
 
 
+def _resolve_subtitle_style(
+    subtitle_style: SubtitleStyle | str | None = None,
+    ass_style: dict | None = None,
+) -> SubtitleStyle:
+    if subtitle_style is not None:
+        if isinstance(subtitle_style, str):
+            return load_style(subtitle_style)
+        return subtitle_style
+    if ass_style is not None:
+        h = ass_style.copy()
+        v = {}
+        vertical_keys = {
+            "video_width": 1080, "video_height": 1920,
+            "font_size": 72, "bg_alpha": 192,
+            "corner_radius": 16, "padding_h": 28, "padding_v": 14, "margin_v": 80,
+        }
+        for vk, default in vertical_keys.items():
+            v[vk] = h.pop(vk, default)
+        for k in ("font_name", "bg_color", "text_color"):
+            v[k] = h.get(k, "Noto Sans SC" if k == "font_name" else ("1A1A1A" if k == "bg_color" else "FFFFFF"))
+        h_style = OrientationStyle(**h)
+        v_style = OrientationStyle(**v)
+        return SubtitleStyle(name="legacy_dict", horizontal=h_style, vertical=v_style)
+    return get_default_style()
+
+
 def process_clip(
     clip: dict,
     clip_dir: Path,
@@ -392,6 +400,7 @@ def process_clip(
     max_chars: int = 18,
     strip_punctuation: bool = True,
     ass_style: dict | None = None,
+    subtitle_style: SubtitleStyle | str | None = None,
     fade_in_s: float = 0.05,
     fade_out_s: float = 0.1,
     extra_metadata: dict | None = None,
@@ -400,6 +409,8 @@ def process_clip(
     start_s = clip["start_s"]
     end_s = clip["end_s"]
     duration_s = end_s - start_s
+
+    style = _resolve_subtitle_style(subtitle_style, ass_style)
 
     clip_dir.mkdir(parents=True, exist_ok=True)
     result = ClipProcessResult(
@@ -422,9 +433,8 @@ def process_clip(
     )
     processed_entries = merge_short_entries(processed_entries, max_chars)
 
-    style = ass_style or {}
     ass_output = clip_dir / f"{clip_id}.ass"
-    result.ass_ok = generate_ass(processed_entries, ass_output, **style)
+    result.ass_ok = generate_ass(processed_entries, ass_output, style=style.horizontal)
     result.subtitle_count = len(processed_entries)
 
     if make_srt:
@@ -436,24 +446,13 @@ def process_clip(
         result.video_sub_ok = generate_video_subtitled(
             video_source, ass_output, start_s, end_s, video_sub_output,
             skip_existing=skip_existing,
+            output_width=style.horizontal.output_width,
+            output_height=style.horizontal.output_height,
         )
 
         if make_vertical:
-            vertical_style = {
-                "video_width": 1080,
-                "video_height": 1920,
-                "font_name": "Noto Sans SC",
-                "font_size": 72,
-                "bg_color": "1A1A1A",
-                "bg_alpha": 192,
-                "text_color": "FFFFFF",
-                "corner_radius": 16,
-                "padding_h": 28,
-                "padding_v": 14,
-                "margin_v": 80,
-            }
             ass_vert_output = clip_dir / f"{clip_id}_vertical.ass"
-            generate_ass(processed_entries, ass_vert_output, **vertical_style)
+            generate_ass(processed_entries, ass_vert_output, style=style.vertical)
             video_vert_output = clip_dir / f"{clip_id}_vertical.mp4"
             result.video_vertical_ok = generate_video_vertical(
                 video_source, ass_vert_output, start_s, end_s, video_vert_output,
@@ -477,6 +476,7 @@ def process_series(
     max_chars: int = 18,
     strip_punctuation: bool = True,
     ass_style: dict | None = None,
+    subtitle_style: SubtitleStyle | str | None = None,
     fade_in_s: float = 0.05,
     fade_out_s: float = 0.1,
     series_name: str = "",
@@ -498,6 +498,7 @@ def process_series(
                 max_chars=max_chars,
                 strip_punctuation=strip_punctuation,
                 ass_style=ass_style,
+                subtitle_style=subtitle_style,
                 fade_in_s=fade_in_s,
                 fade_out_s=fade_out_s,
             )
