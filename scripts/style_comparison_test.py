@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from pipeline.clip_processor import process_clip, _resolve_subtitle_style
+from pipeline.clip_processor import process_clip
 from pipeline.subtitle_style import load_style, list_available_styles
 from pipeline.config import PipelineConfig
 from pipeline.quality_checker import parse_srt_file

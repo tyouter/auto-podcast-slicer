@@ -7,7 +7,6 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional
 
-from pipeline.config import PipelineConfig
 from pipeline.subtitle_content import process_subtitle_content
 from pipeline.subtitle_renderer import generate_ass_with_rounded_bg, generate_ass_with_style
 from pipeline.subtitle_style import SubtitleStyle, OrientationStyle, load_style, get_default_style
