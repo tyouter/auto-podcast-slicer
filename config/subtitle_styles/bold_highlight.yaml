@@ -26,3 +26,4 @@ vertical:
   padding_h: 32
   padding_v: 16
   margin_v: 85
+  overlay_content_aspect: "16:9"

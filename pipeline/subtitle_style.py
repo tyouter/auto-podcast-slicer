@@ -5,6 +5,13 @@ from typing import Optional
 import yaml
 
 
+def _parse_aspect_ratio(spec: str) -> tuple[int, int]:
+    parts = spec.replace(":", "/").replace("x", "/").split("/")
+    if len(parts) == 2:
+        return int(parts[0]), int(parts[1])
+    return 16, 9
+
+
 @dataclass
 class OrientationStyle:
     video_width: int = 3840
@@ -24,6 +31,19 @@ class OrientationStyle:
     outline_color: str = "000000"
     shadow_enabled: bool = False
     shadow_depth: int = 0
+    overlay_content_aspect: str = ""
+
+    @property
+    def effective_margin_v(self) -> int:
+        if not self.overlay_content_aspect:
+            return self.margin_v
+        aw, ah = _parse_aspect_ratio(self.overlay_content_aspect)
+        content_h = int(self.video_width * ah / aw)
+        content_h = content_h + (content_h % 2)
+        if content_h >= self.video_height:
+            return self.margin_v
+        content_bottom = (self.video_height + content_h) // 2
+        return self.video_height - content_bottom + self.margin_v
 
     def to_ass_params(self) -> dict:
         return {
@@ -37,7 +57,7 @@ class OrientationStyle:
             "corner_radius": self.corner_radius,
             "padding_h": self.padding_h,
             "padding_v": self.padding_v,
-            "margin_v": self.margin_v,
+            "margin_v": self.effective_margin_v,
         }
 
 
@@ -64,6 +84,7 @@ class SubtitleStyle:
                 padding_h=28,
                 padding_v=14,
                 margin_v=80,
+                overlay_content_aspect="16:9",
             )
 
 
@@ -81,6 +102,7 @@ def _parse_orientation(data: dict, defaults: OrientationStyle | None = None) -> 
         "font_name", "font_size", "bg_color", "bg_alpha", "text_color",
         "corner_radius", "padding_h", "padding_v", "margin_v",
         "outline_width", "outline_color", "shadow_enabled", "shadow_depth",
+        "overlay_content_aspect",
     ):
         if f_name in data:
             kwargs[f_name] = data[f_name]

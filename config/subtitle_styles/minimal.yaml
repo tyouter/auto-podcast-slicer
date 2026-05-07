@@ -34,3 +34,4 @@ vertical:
   outline_color: "000000"
   shadow_enabled: true
   shadow_depth: 2
+  overlay_content_aspect: "16:9"
