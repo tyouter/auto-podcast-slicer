@@ -10,6 +10,7 @@ from typing import Optional
 from pipeline.subtitle_content import process_subtitle_content
 from pipeline.subtitle_renderer import generate_ass_with_rounded_bg, generate_ass_with_style
 from pipeline.subtitle_style import SubtitleStyle, OrientationStyle, load_style, get_default_style
+from pipeline.subtitle_formatter import segment_subtitle_entries, align_bilingual_entries
 
 
 @dataclass
@@ -79,6 +80,10 @@ def process_clip_subtitles(
     custom_errata: dict | None = None,
     max_chars: int = 18,
     strip_punctuation: bool = True,
+    enable_deep_correction: bool = False,
+    mode: str = "single_cn",
+    max_chars_en: int = 42,
+    display_punctuation: bool = True,
 ) -> list[dict]:
     processed_entries = []
     for i, raw in enumerate(clip_entries_raw):
@@ -94,13 +99,21 @@ def process_clip_subtitles(
             is_last=is_last,
             custom_errata=custom_errata,
             strip_punctuation=strip_punctuation,
+            enable_deep_correction=enable_deep_correction,
+            mode=mode,
+            max_chars_en=max_chars_en,
+            display_punctuation=display_punctuation,
         )
-        processed_entries.append({
+        entry = {
             "index": i + 1,
             "start_s": raw["start_s"],
             "end_s": raw["end_s"],
             "text": processed_text,
-        })
+        }
+        if mode == "bilingual" and raw.get("text_en"):
+            from pipeline.subtitle_formatter import _format_english_line
+            entry["text_en"] = _format_english_line(raw["text_en"], max_chars_en)
+        processed_entries.append(entry)
     return processed_entries
 
 
@@ -216,12 +229,29 @@ def generate_ass(
     processed_entries: list[dict],
     output_path: Path,
     style: OrientationStyle | None = None,
+    subtitle_mode: str = "single_cn",
+    en_font_scale: float = 0.6,
+    en_font_name: str | None = None,
+    line_gap_em: float = 0.3,
     **kwargs,
 ) -> bool:
     if style is not None:
-        ass_content = generate_ass_with_style(entries=processed_entries, style=style)
+        ass_content = generate_ass_with_style(
+            entries=processed_entries, style=style,
+            subtitle_mode=subtitle_mode,
+            en_font_scale=en_font_scale,
+            en_font_name=en_font_name,
+            line_gap_em=line_gap_em,
+        )
     else:
-        ass_content = generate_ass_with_rounded_bg(entries=processed_entries, **kwargs)
+        ass_content = generate_ass_with_rounded_bg(
+            entries=processed_entries,
+            subtitle_mode=subtitle_mode,
+            en_font_scale=en_font_scale,
+            en_font_name=en_font_name,
+            line_gap_em=line_gap_em,
+            **kwargs,
+        )
     output_path.write_text(ass_content, encoding="utf-8")
     return output_path.exists()
 
@@ -403,6 +433,12 @@ def process_clip(
     fade_in_s: float = 0.05,
     fade_out_s: float = 0.1,
     extra_metadata: dict | None = None,
+    enable_deep_correction: bool = False,
+    subtitle_mode: str = "single_cn",
+    en_font_scale: float = 0.6,
+    en_font_name: str | None = None,
+    line_gap_em: float = 0.3,
+    use_semantic_segmentation: bool = False,
 ) -> ClipProcessResult:
     clip_id = clip["id"]
     start_s = clip["start_s"]
@@ -410,6 +446,13 @@ def process_clip(
     duration_s = end_s - start_s
 
     style = _resolve_subtitle_style(subtitle_style, ass_style)
+
+    style_issues = style.validate()
+    if style_issues:
+        import logging
+        logger = logging.getLogger(__name__)
+        for issue in style_issues:
+            logger.warning("样式校验: %s", issue)
 
     clip_dir.mkdir(parents=True, exist_ok=True)
     result = ClipProcessResult(
@@ -427,13 +470,37 @@ def process_clip(
     result.audio_mp3_ok = mp3_ok
 
     clip_entries_raw = extract_clip_entries(entries, start_s, end_s)
-    processed_entries = process_clip_subtitles(
-        clip_entries_raw, custom_errata, max_chars, strip_punctuation,
-    )
-    processed_entries = merge_short_entries(processed_entries, max_chars)
+
+    if use_semantic_segmentation:
+        processed_entries = segment_subtitle_entries(
+            clip_entries_raw,
+            max_chars_per_line=max_chars,
+        )
+        # Apply errata and deep corrections to segmented entries
+        if custom_errata or enable_deep_correction:
+            for entry in processed_entries:
+                text = entry["text"]
+                if custom_errata:
+                    from pipeline.subtitle_content import apply_custom_errata
+                    text = apply_custom_errata(text, custom_errata)
+                if enable_deep_correction:
+                    from pipeline.text_corrector import correct_text
+                    text, _ = correct_text(text)
+                entry["text"] = text
+    else:
+        processed_entries = process_clip_subtitles(
+            clip_entries_raw, custom_errata, max_chars, strip_punctuation,
+            enable_deep_correction=enable_deep_correction,
+            mode=subtitle_mode, display_punctuation=True,
+        )
+        processed_entries = merge_short_entries(processed_entries, max_chars)
 
     ass_output = clip_dir / f"{clip_id}.ass"
-    result.ass_ok = generate_ass(processed_entries, ass_output, style=style.horizontal)
+    result.ass_ok = generate_ass(
+        processed_entries, ass_output, style=style.horizontal,
+        subtitle_mode=subtitle_mode, en_font_scale=en_font_scale,
+        en_font_name=en_font_name, line_gap_em=line_gap_em,
+    )
     result.subtitle_count = len(processed_entries)
 
     if make_srt:
@@ -451,7 +518,11 @@ def process_clip(
 
         if make_vertical:
             ass_vert_output = clip_dir / f"{clip_id}_vertical.ass"
-            generate_ass(processed_entries, ass_vert_output, style=style.vertical)
+            generate_ass(
+                processed_entries, ass_vert_output, style=style.vertical,
+                subtitle_mode=subtitle_mode, en_font_scale=en_font_scale,
+                en_font_name=en_font_name, line_gap_em=line_gap_em,
+            )
             video_vert_output = clip_dir / f"{clip_id}_vertical.mp4"
             result.video_vertical_ok = generate_video_vertical(
                 video_source, ass_vert_output, start_s, end_s, video_vert_output,
@@ -481,6 +552,12 @@ def process_series(
     series_name: str = "",
     project_name: str = "",
     source_id: str = "",
+    enable_deep_correction: bool = False,
+    subtitle_mode: str = "single_cn",
+    en_font_scale: float = 0.6,
+    en_font_name: str | None = None,
+    line_gap_em: float = 0.3,
+    use_semantic_segmentation: bool = False,
 ) -> list[ClipProcessResult]:
     series_dir.mkdir(parents=True, exist_ok=True)
     results = []
@@ -500,6 +577,12 @@ def process_series(
                 subtitle_style=subtitle_style,
                 fade_in_s=fade_in_s,
                 fade_out_s=fade_out_s,
+                enable_deep_correction=enable_deep_correction,
+                subtitle_mode=subtitle_mode,
+                en_font_scale=en_font_scale,
+                en_font_name=en_font_name,
+                line_gap_em=line_gap_em,
+                use_semantic_segmentation=use_semantic_segmentation,
             )
             results.append(r)
         except Exception as e:

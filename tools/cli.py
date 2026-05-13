@@ -18,7 +18,9 @@ def cli():
 @click.option("--make-vertical/--no-vertical", default=False, help="是否生成竖屏视频")
 @click.option("--make-srt/--no-srt", default=True, help="是否生成SRT字幕")
 @click.option("--max-chars", default=18, help="每行最大字符数")
-def clip(project_dir, series, make_vertical, make_srt, max_chars):
+@click.option("--strip-punctuation/--keep-punctuation", default=True, help="是否移除标点")
+@click.option("--subtitle-mode", type=click.Choice(["single_cn", "single_en", "bilingual"]), default="single_cn", help="字幕模式")
+def clip(project_dir, series, make_vertical, make_srt, max_chars, strip_punctuation, subtitle_mode):
     """基于项目配置运行剪辑 pipeline"""
     from pipeline.loader import load_project
     from pipeline.clip_processor import process_series
@@ -60,7 +62,8 @@ def clip(project_dir, series, make_vertical, make_srt, max_chars):
             make_srt=make_srt,
             skip_existing=True,
             max_chars=max_chars,
-            strip_punctuation=True,
+            strip_punctuation=strip_punctuation,
+            subtitle_mode=subtitle_mode,
             series_name=series_name,
             project_name=config.project_name,
         )
@@ -142,10 +145,12 @@ def quality(project_dir):
 @cli.command()
 @click.option("--project-dir", "-p", type=click.Path(exists=True), help="项目目录路径")
 @click.option("--max-experiments", "-n", default=3, help="最大实验次数")
-def autoresearch(project_dir, max_experiments):
+@click.option("--regenerate/--no-regenerate", default=True, help="每次实验是否重新生成视频")
+def autoresearch(project_dir, max_experiments, regenerate):
     """自动迭代改进"""
     from pipeline.loader import load_project
     from pipeline.quality_checker import run_quality_check
+    from pipeline.clip_processor import process_series
     from autoresearch.experiment import Experiment
     from autoresearch.strategies import get_recommended_strategies
     from autoresearch.metrics import compute_metrics_from_quality_report
@@ -179,12 +184,32 @@ def autoresearch(project_dir, max_experiments):
         for i, strategy in enumerate(strategies[:max_experiments]):
             click.echo(f"  策略 {i+1}: {strategy.strategy_name}")
 
-            def quality_fn(cfg):
-                return run_quality_check(series_dir, cfg, version_key=f"auto_{series_name}_exp_{i+1}")
+            def _make_quality_fn(sn, sd, idx):
+                def quality_fn(cfg):
+                    if regenerate:
+                        clips = cfg.get_clips(sn)
+                        if clips:
+                            process_series(
+                                clips=clips,
+                                series_dir=sd,
+                                entries=ctx.entries,
+                                audio_source=cfg.source_audio,
+                                video_source=cfg.source_video,
+                                custom_errata=ctx.custom_errata,
+                                make_vertical=True,
+                                make_srt=True,
+                                skip_existing=False,
+                                max_chars=cfg.get("pipeline.subtitle.max_chars_per_line_cn", 18),
+                                strip_punctuation=True,
+                                series_name=sn,
+                                project_name=cfg.project_name,
+                            )
+                    return run_quality_check(sd, cfg, version_key=f"auto_{sn}_exp_{idx+1}")
+                return quality_fn
 
             record = experiment.run_experiment(
                 config_modifications=strategy.config_modifications,
-                quality_report_fn=quality_fn,
+                quality_report_fn=_make_quality_fn(series_name, series_dir, i),
                 notes=f"Autoresearch for {series_name}: {strategy.strategy_name}",
             )
 
@@ -281,6 +306,58 @@ def audit(project_dir):
             click.echo(f"     📋 建议:")
             for rec in report.recommendations:
                 click.echo(f"        {rec}")
+
+
+@cli.command()
+@click.option("--source", "-s", type=click.Path(exists=True), required=True, help="截图或视频文件路径")
+@click.option("--name", "-n", default="extracted_style", help="输出样式名称")
+@click.option("--output-dir", "-o", type=click.Path(), help="输出目录 (默认: config/subtitle_styles)")
+@click.option("--verify/--no-verify", default=True, help="是否生成验证 ASS 文件")
+@click.option("--timestamps", "-t", multiple=True, type=float, help="视频提取时间点 (秒)")
+@click.option("--max-frames", default=5, help="从视频中提取的最大帧数")
+def extract_subtitle_style(source, name, output_dir, verify, timestamps, max_frames):
+    """从截图或视频中提取字幕样式并生成配置文件"""
+    from pipeline.subtitle_style_extractor import extract_and_save, verify_extracted_style
+
+    ts_list = list(timestamps) if timestamps else None
+
+    style, yaml_path = extract_and_save(
+        source=source,
+        output_name=name,
+        output_dir=output_dir,
+        timestamps=ts_list,
+        max_frames=max_frames,
+    )
+
+    click.echo(f"✅ 样式提取完成")
+    click.echo(f"   名称: {style.name}")
+    click.echo(f"   描述: {style.description}")
+    click.echo(f"   配置文件: {yaml_path}")
+
+    h = style.horizontal
+    click.echo(f"\n   横版样式:")
+    click.echo(f"     分辨率: {h.video_width}x{h.video_height}")
+    click.echo(f"     字体: {h.font_name} {h.font_size}px {'粗体' if h.bold else ''}")
+    click.echo(f"     文字色: #{h.text_color}")
+    click.echo(f"     背景: {'启用' if h.bg_enabled else '禁用'} #{h.bg_color} alpha={h.bg_alpha}")
+    click.echo(f"     描边: {h.outline_width}px #{h.outline_color}")
+    click.echo(f"     阴影: {h.shadow_depth}px #{h.shadow_color}")
+    click.echo(f"     圆角: {h.corner_radius}")
+    click.echo(f"     边距: margin_v={h.margin_v}, padding_h={h.padding_h}, padding_v={h.padding_v}")
+
+    v = style.vertical
+    click.echo(f"\n   竖版样式:")
+    click.echo(f"     分辨率: {v.video_width}x{v.video_height}")
+    click.echo(f"     字体: {v.font_name} {v.font_size}px {'粗体' if v.bold else ''}")
+
+    if verify:
+        verify_dir = Path(output_dir) / "verify" if output_dir else Path(yaml_path).parent / "verify"
+        results = verify_extracted_style(style, output_dir=verify_dir)
+        for orient, data in results.items():
+            if data:
+                click.echo(f"\n   验证 ({orient}): {'✅' if data.get('has_text') else '❌'} ASS 生成{'成功' if data.get('has_text') else '失败'}")
+                if data.get("ass_path"):
+                    click.echo(f"     文件: {data['ass_path']}")
 
 
 @cli.command()

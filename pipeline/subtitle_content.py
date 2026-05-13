@@ -20,6 +20,8 @@ from pipeline.subtitle_formatter import (
     clean_subtitle_text,
     enforce_single_line,
     format_subtitle_single_line,
+    format_subtitle_by_mode,
+    selective_display_punctuation,
     check_line_start_rules,
     check_line_end_rules,
     detect_meaningless_words,
@@ -269,16 +271,35 @@ def process_subtitle_content(
     is_last: bool = False,
     custom_errata: dict | None = None,
     strip_punctuation: bool = True,
+    enable_deep_correction: bool = False,
+    mode: str = "single_cn",
+    max_chars_en: int = 42,
+    display_punctuation: bool = True,
 ) -> str:
     text = normalize_to_simplified_chinese(text)
     if custom_errata:
         text = apply_custom_errata(text, custom_errata)
+    if enable_deep_correction:
+        from pipeline.text_corrector import correct_text
+        text, _changes = correct_text(text)
     text = clean_subtitle_text(text)
     text = add_punctuation_smart(text, next_text, duration_s, gap_s, is_last)
-    text = enforce_single_line(text)
-    text = format_subtitle_single_line(text, max_chars)
+
+    if mode != "single_cn":
+        text = format_subtitle_by_mode(text, mode=mode, max_chars_cn=max_chars, max_chars_en=max_chars_en)
+    else:
+        text = enforce_single_line(text)
+        effective_max = max_chars
+        if duration_s > 0:
+            max_by_speed = max(4, int(duration_s * 4))
+            effective_max = min(max_chars, max_by_speed)
+        text = format_subtitle_single_line(text, effective_max)
+
     if strip_punctuation:
-        text = remove_display_punctuation(text)
+        if display_punctuation:
+            text = selective_display_punctuation(text)
+        else:
+            text = remove_display_punctuation(text)
     return text
 
 

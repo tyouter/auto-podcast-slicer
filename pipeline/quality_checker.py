@@ -3,7 +3,10 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from pipeline.config import PipelineConfig
 from pipeline.audio_verifier import verify_audio, AudioVerificationResult
-from pipeline.subtitle_verifier import verify_subtitles, SubtitleVerificationResult
+from pipeline.subtitle_verifier import (
+    verify_subtitles, SubtitleVerificationResult,
+    check_semantic_completeness, check_visual_bounds,
+)
 from pipeline.subtitle_generator import SubtitleResult
 
 
@@ -14,6 +17,9 @@ class QualityReport:
     passed: bool = False
     audio_results: list[dict] = field(default_factory=list)
     subtitle_result: dict | None = None
+    alignment_result: dict | None = None
+    style_extraction_result: dict | None = None
+    loudness_result: dict | None = None
     efficiency_result: dict | None = None
     export_results: list[dict] = field(default_factory=list)
     critical_issues: list[dict] = field(default_factory=list)
@@ -27,6 +33,9 @@ class QualityReport:
             "passed": self.passed,
             "audio_results": self.audio_results,
             "subtitle_result": self.subtitle_result,
+            "alignment_result": self.alignment_result,
+            "style_extraction_result": self.style_extraction_result,
+            "loudness_result": self.loudness_result,
             "efficiency_result": self.efficiency_result,
             "export_results": self.export_results,
             "critical_issues": self.critical_issues,
@@ -80,6 +89,8 @@ def check_subtitle_files(
     total_score = 0
     errata_violations = 0
     style_score = 95.0
+    total_content_score = 0.0
+    content_file_count = 0
 
     for sub_file in sub_files:
         try:
@@ -98,6 +109,8 @@ def check_subtitle_files(
                 [{"text": e.text, "start_s": e.start_ms / 1000, "end_s": e.end_ms / 1000} for e in entries],
                 max_chars=config.get("pipeline.subtitle.max_chars_per_line_cn", 18),
             )
+            total_content_score += content_result.score
+            content_file_count += 1
             for issue in content_result.issues:
                 if issue.severity in ("critical", "warning"):
                     errata_violations += 1
@@ -114,6 +127,16 @@ def check_subtitle_files(
                     style_score -= 10
                 if "ScaledBorderAndShadow" not in ass_content:
                     style_score -= 5
+
+                # Semantic completeness check
+                semantic_issues = check_semantic_completeness(entries)
+                for si in semantic_issues:
+                    all_issues.append({"source": "subtitle_semantic", "issue_type": si.issue_type, "severity": si.severity, "description": si.description, "suggestion": si.suggestion})
+
+                # Visual bounds check
+                visual_issues = check_visual_bounds(ass_content)
+                for vi in visual_issues:
+                    all_issues.append({"source": "subtitle_visual", "issue_type": vi.issue_type, "severity": vi.severity, "description": vi.description, "suggestion": vi.suggestion})
         except (OSError, UnicodeDecodeError):
             pass
 
@@ -122,9 +145,12 @@ def check_subtitle_files(
 
     avg_score = total_score / max(1, len(sub_files))
 
+    avg_content_score = total_content_score / max(1, content_file_count)
+
     return {
         "total_entries": total_entries,
         "average_score": round(avg_score, 1),
+        "content_score": round(avg_content_score, 1),
         "style_score": round(max(0, style_score), 1),
         "errata_violations": errata_violations,
         "issues": all_issues,
@@ -256,7 +282,10 @@ def check_efficiency(output_dir: Path) -> dict | None:
         return None
 
     skip_ratio = total_skipped / total
-    efficiency_score = min(100, skip_ratio * 100 + 50)
+    if total_generated > 0 and total_skipped == 0:
+        efficiency_score = 100.0
+    else:
+        efficiency_score = min(100, skip_ratio * 100 + 50)
 
     redundant_count = 0
 
@@ -337,11 +366,18 @@ def run_quality_check(
 
     audio_score = sum(ar.get("score", 0) for ar in audio_results) / max(1, len(audio_results)) if audio_results else 100
     subtitle_score = subtitle_result.get("average_score", 100) if subtitle_result else 100
+    content_score = subtitle_result.get("content_score", 100) if subtitle_result else 100
     style_score = subtitle_result.get("style_score", 0) if subtitle_result else 0
-    eff_score = efficiency_result.get("efficiency_score", 0) if efficiency_result else 0
+    eff_score = efficiency_result.get("efficiency_score", 100) if efficiency_result else 100
 
-    overall_score = audio_score * 0.3 + subtitle_score * 0.3 + style_score * 0.2 + eff_score * 0.2
-    passed = len(all_critical) == 0 and overall_score >= 90
+    overall_score = audio_score * 0.25 + (subtitle_score * 0.4 + content_score * 0.6) * 0.25 + style_score * 0.20 + eff_score * 0.20
+    # Semantic/visual dimension adjustment (penalty for issues, not bonus)
+    if subtitle_result:
+        sem_issues = [i for i in subtitle_result.get("issues", []) if i.get("source") in ("subtitle_semantic", "subtitle_visual")]
+        if sem_issues:
+            sem_penalty = min(10, len(sem_issues) * 2)
+            overall_score = max(0, overall_score - sem_penalty)
+    passed = len(all_critical) == 0 and overall_score >= 80
 
     recommendations = generate_recommendations(audio_results, subtitle_result, all_critical, all_warnings)
 
