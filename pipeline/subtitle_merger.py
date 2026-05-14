@@ -196,7 +196,14 @@ def ensure_minimum_duration(
     segments: list[MergedSegment],
     config: PipelineConfig,
 ) -> list[MergedSegment]:
-    min_display_ms = config.get("pipeline.subtitle.min_display_duration", 1.0) * 1000
+    min_display_ms = int(config.get("pipeline.subtitle.min_display_duration", 1.0) * 1000)
+    max_chars = config.get("pipeline.subtitle.max_chars_per_line_cn", 18) * config.get("pipeline.subtitle.max_lines", 2)
+    max_display_ms = int(config.get("pipeline.subtitle.max_display_duration", 7.0) * 1000)
+    reading_speed = config.get("pipeline.subtitle.reading_speed_cn", 4)
+    max_speed = reading_speed * 1.5
+
+    if not segments:
+        return segments
 
     result = []
     i = 0
@@ -207,50 +214,54 @@ def ensure_minimum_duration(
             result.append(seg)
             i += 1
         else:
-            if result:
+            # Try merging backward first
+            if result and _can_merge_pair_seg(result[-1], seg, max_chars, max_display_ms, max_speed):
                 prev = result[-1]
-                combined_text = prev.text + seg.text
-                combined_chars = len(re.findall(r'[\u4e00-\u9fff]', combined_text))
-                max_chars = config.get("pipeline.subtitle.max_chars_per_line_cn", 15) * config.get("pipeline.subtitle.max_lines", 2)
-
-                if combined_chars <= max_chars:
-                    result[-1] = MergedSegment(
-                        start_ms=prev.start_ms,
-                        end_ms=seg.end_ms,
-                        text=combined_text,
-                        source_indices=prev.source_indices + seg.source_indices,
-                    )
+                result[-1] = MergedSegment(
+                    start_ms=prev.start_ms,
+                    end_ms=seg.end_ms,
+                    text=prev.text + seg.text,
+                    source_indices=prev.source_indices + seg.source_indices,
+                )
+            # Try merging forward
+            elif i + 1 < len(segments) and _can_merge_pair_seg(seg, segments[i + 1], max_chars, max_display_ms, max_speed):
+                next_seg = segments[i + 1]
+                result.append(MergedSegment(
+                    start_ms=seg.start_ms,
+                    end_ms=next_seg.end_ms,
+                    text=seg.text + next_seg.text,
+                    source_indices=seg.source_indices + next_seg.source_indices,
+                ))
+                i += 2
+                continue
+            # Extend into gap
+            elif i + 1 < len(segments):
+                gap_ms = segments[i + 1].start_ms - seg.end_ms
+                min_gap_ms = int(config.get("pipeline.subtitle.min_gap_duration", 0.067) * 1000)
+                if gap_ms > min_gap_ms * 2:
+                    # Plenty of gap - extend to full min_duration, leaving min_gap
+                    extend_ms = min(int(gap_ms - min_gap_ms), min_display_ms - seg.duration_ms)
+                elif gap_ms > 0:
+                    extend_ms = min(int(gap_ms // 2), min_display_ms - seg.duration_ms)
                 else:
-                    result[-1] = MergedSegment(
-                        start_ms=prev.start_ms,
-                        end_ms=prev.end_ms + (min_display_ms - seg.duration_ms),
-                        text=prev.text,
-                        source_indices=prev.source_indices[:],
-                    )
-                    result.append(seg)
+                    extend_ms = 0
+                result.append(MergedSegment(
+                    start_ms=seg.start_ms,
+                    end_ms=seg.end_ms + extend_ms,
+                    text=seg.text,
+                    source_indices=seg.source_indices[:],
+                ))
+            # Last segment - pad to minimum
             else:
-                if i + 1 < len(segments):
-                    next_seg = segments[i + 1]
-                    combined_text = seg.text + next_seg.text
-                    result.append(MergedSegment(
-                        start_ms=seg.start_ms,
-                        end_ms=next_seg.end_ms,
-                        text=combined_text,
-                        source_indices=seg.source_indices + next_seg.source_indices,
-                    ))
-                    i += 2
-                    continue
-                else:
-                    result.append(MergedSegment(
-                        start_ms=seg.start_ms,
-                        end_ms=seg.start_ms + min_display_ms,
-                        text=seg.text,
-                        source_indices=seg.source_indices[:],
-                    ))
+                result.append(MergedSegment(
+                    start_ms=seg.start_ms,
+                    end_ms=seg.start_ms + min_display_ms,
+                    text=seg.text,
+                    source_indices=seg.source_indices[:],
+                ))
             i += 1
 
     return result
-
 
 def extend_for_readability(
     segments: list[MergedSegment],
@@ -361,6 +372,137 @@ def merge_fast_segments(
     return result
 
 
+def _is_tiny_fragment(seg: MergedSegment, min_display_ms: int) -> bool:
+    """Check if a segment is too small to stand alone.
+    
+    A tiny fragment is one that:
+    - Has ≤3 CJK characters, or
+    - Duration < 1.0s, or
+    - Starts with a forbidden line-start character (suggesting it's a tail of previous segment)
+    """
+    FORBIDDEN_STARTERS = '的了着过吗呢吧啊呀哇嘛呗的啦咯嗯噢哦哈但是因为所以如果虽然然后不过'
+    
+    text = seg.text.strip()
+    cn_chars = len(re.findall(r'[\u4e00-\u9fff]', text))
+    duration_ms = seg.duration_ms
+    
+    if cn_chars <= 3:
+        return True
+    if duration_ms < min_display_ms:
+        return True
+    # Forbidden starter only matters when the segment is short (≤5 chars total)
+    if cn_chars <= 5 and text and text[0] in FORBIDDEN_STARTERS:
+        return True
+    return False
+
+
+def _can_merge_pair_seg(
+    seg_a: MergedSegment,
+    seg_b: MergedSegment,
+    max_chars: int,
+    max_display_ms: int,
+    max_speed: float,
+) -> bool:
+    """Check if two adjacent segments can be merged."""
+    combined_text = seg_a.text + seg_b.text
+    combined_cn_chars = len(re.findall(r'[\u4e00-\u9fff]', combined_text))
+    combined_duration_ms = seg_b.end_ms - seg_a.start_ms
+    
+    if combined_cn_chars > max_chars:
+        return False
+    if combined_duration_ms > max_display_ms:
+        return False
+    if combined_duration_ms > 0:
+        combined_speed = combined_cn_chars / (combined_duration_ms / 1000)
+        if combined_speed > max_speed:
+            return False
+    return True
+
+
+def merge_tiny_fragments(
+    segments: list[MergedSegment],
+    config: PipelineConfig,
+) -> list[MergedSegment]:
+    """Force-merge short fragments (≤3 chars or <1s) into adjacent segments.
+    
+    This is a safety-net pass that runs after all other merging to catch
+    fragments that escape the main merger. Standalone words like "这个",
+    "上来", "对啊", "但" should never appear as independent subtitle entries.
+    """
+    if len(segments) < 2:
+        return segments
+    
+    min_display_ms = int(config.get("pipeline.subtitle.min_display_duration", 1.0) * 1000)
+    max_chars = config.get("pipeline.subtitle.max_chars_per_line_cn", 18) * config.get("pipeline.subtitle.max_lines", 2)
+    max_display_ms = int(config.get("pipeline.subtitle.max_display_duration", 7.0) * 1000)
+    reading_speed = config.get("pipeline.subtitle.reading_speed_cn", 4)
+    max_speed = reading_speed * 1.5
+    
+    result = []
+    i = 0
+    while i < len(segments):
+        seg = segments[i]
+        
+        if not _is_tiny_fragment(seg, min_display_ms):
+            result.append(seg)
+            i += 1
+            continue
+        
+        # Try merging backward first for sentence-ending fragments
+        prefer_backward = seg.text and seg.text[-1] in '啊呀哇嘛呗啦咯嗯噢哦哈对呢吧吗'
+        merged = False
+        
+        if prefer_backward and result:
+            prev_seg = result[-1]
+            if _can_merge_pair_seg(prev_seg, seg, max_chars, max_display_ms, max_speed):
+                result[-1] = MergedSegment(
+                    start_ms=prev_seg.start_ms,
+                    end_ms=seg.end_ms,
+                    text=prev_seg.text + seg.text,
+                    source_indices=prev_seg.source_indices + seg.source_indices,
+                )
+                i += 1
+                merged = True
+        
+        if merged:
+            continue
+        
+        # Try merging forward (with next segment)
+        if i + 1 < len(segments):
+            next_seg = segments[i + 1]
+            if _can_merge_pair_seg(seg, next_seg, max_chars, max_display_ms, max_speed):
+                result.append(MergedSegment(
+                    start_ms=seg.start_ms,
+                    end_ms=next_seg.end_ms,
+                    text=seg.text + next_seg.text,
+                    source_indices=seg.source_indices + next_seg.source_indices,
+                ))
+                i += 2
+                merged = True
+        
+        if merged:
+            continue
+        
+        # Try merging backward (with previous segment)
+        if result:
+            prev_seg = result[-1]
+            if _can_merge_pair_seg(prev_seg, seg, max_chars, max_display_ms, max_speed):
+                result[-1] = MergedSegment(
+                    start_ms=prev_seg.start_ms,
+                    end_ms=seg.end_ms,
+                    text=prev_seg.text + seg.text,
+                    source_indices=prev_seg.source_indices + seg.source_indices,
+                )
+                i += 1
+                continue
+        
+        # Can't merge either direction — keep as-is (ensure_minimum_duration will extend it later)
+        result.append(seg)
+        i += 1
+    
+    return result
+
+
 def add_gaps_between_entries(
     segments: list[MergedSegment],
     config: PipelineConfig,
@@ -428,6 +570,7 @@ def process_transcript_to_subtitles(
 
     final_merged = ensure_minimum_duration(final_merged, config)
     final_merged = merge_fast_segments(final_merged, config)
+    final_merged = merge_tiny_fragments(final_merged, config)
     final_merged = add_gaps_between_entries(final_merged, config)
     final_merged = extend_for_readability(final_merged, config)
 

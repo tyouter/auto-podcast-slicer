@@ -8,6 +8,8 @@ from pipeline.config import PipelineConfig
 from autoresearch.metrics import PipelineMetrics, compute_metrics_from_quality_report, compare_metrics, compute_better_than_baseline
 from pipeline.quality_checker import QualityReport
 
+_SENTINEL = object()
+
 
 @dataclass
 class ExperimentRecord:
@@ -102,6 +104,25 @@ class Experiment:
         timestamp = datetime.now().isoformat()
 
         config_before = copy.deepcopy(self.config.to_dict())
+
+        # Validate config paths exist before applying
+        invalid_paths = []
+        for dotpath in config_modifications:
+            current_val = self.config.get(dotpath, _SENTINEL)
+            if current_val is _SENTINEL:
+                invalid_paths.append(dotpath)
+        if invalid_paths:
+            record = ExperimentRecord(
+                experiment_id=experiment_id,
+                timestamp=timestamp,
+                direction=self.direction,
+                config_snapshot=config_modifications,
+                notes=f"VALIDATION FAILED: unknown config paths: {invalid_paths}",
+                improved=False,
+                kept=False,
+            )
+            self.log.add(record)
+            return record
 
         for dotpath, value in config_modifications.items():
             self.config.set(dotpath, value)

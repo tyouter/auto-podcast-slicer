@@ -187,6 +187,112 @@ STRATEGIES = {
         expected_improvement="精准识别口音/含糊/吞字导致的ASR误识别，提升字幕逐词准确率",
         risk_level="low",
     ),
+    "improve_style_extraction": StrategyResult(
+        strategy_name="improve_style_extraction",
+        description="增强字幕样式提取：确保竖版overlay_content_aspect默认为16:9，样式YAML完整可round-trip",
+        config_modifications={
+            "pipeline.subtitle.style_extraction.vertical_overlay_aspect_default": "16:9",
+            "pipeline.subtitle.style_extraction.ensure_vertical_completeness": True,
+        },
+        expected_improvement="竖版样式参数完整，overlay_content_aspect合规，样式提取得分提升",
+        risk_level="low",
+    ),
+    "improve_alignment_quality": StrategyResult(
+        strategy_name="improve_alignment_quality",
+        description="优化字幕-音频对齐质量：增加时间戳连续性检查、覆盖率检查、语速合理性检查",
+        config_modifications={
+            "pipeline.alignment.check_continuity": True,
+            "pipeline.alignment.min_coverage_ratio": 0.85,
+            "pipeline.alignment.max_speaking_speed": 8.0,
+            "pipeline.alignment.detect_interruptions": True,
+        },
+        expected_improvement="对齐得分提升，时间戳重叠消除，覆盖率达标",
+        risk_level="low",
+    ),
+    "improve_loudness_two_pass": StrategyResult(
+        strategy_name="improve_loudness_two_pass",
+        description="两遍响度标准化：第一遍分析测量值，第二遍精确标准化，确保LUFS偏差≤1dB",
+        config_modifications={
+            "pipeline.audio.loudness.two_pass": True,
+            "pipeline.audio.loudness.target_lufs": -14,
+            "pipeline.audio.loudness.true_peak_dbtp": -1.0,
+            "pipeline.audio.loudness.max_lra": 11,
+        },
+        expected_improvement="LUFS偏差≤1dB，各平台响度达标，True Peak不超标",
+        risk_level="low",
+    ),
+    "improve_vertical_style_completeness": StrategyResult(
+        strategy_name="improve_vertical_style_completeness",
+        description="竖版样式完整性：确保竖版参数独立填写，不使用横版默认值，overlay_content_aspect强制16:9",
+        config_modifications={
+            "pipeline.subtitle.vertical.overlay_content_aspect": "16:9",
+            "pipeline.subtitle.vertical.independent_params": True,
+            "pipeline.subtitle.vertical.blur_background": True,
+        },
+        expected_improvement="竖版样式完整度≥90%，overlay_content_aspect 100%合规",
+        risk_level="low",
+    ),
+    "improve_subtitle_multiline": StrategyResult(
+        strategy_name="improve_subtitle_multiline",
+        description="双行字幕模式：每条字幕最多2行×14字，语义完整不截断",
+        config_modifications={
+            "pipeline.subtitle.max_lines": 2,
+            "pipeline.subtitle.max_chars_per_line_cn": 14,
+        },
+        expected_improvement="字幕语义完整性提升，截断句子比例降低",
+        risk_level="low",
+    ),
+    "improve_subtitle_semantic_segmentation": StrategyResult(
+        strategy_name="improve_subtitle_semantic_segmentation",
+        description="语义重分段：合并短ASR段，清理填充词，在语义边界分段，按字符比例分配时间戳",
+        config_modifications={
+            "pipeline.subtitle.semantic_segmentation.enabled": True,
+            "pipeline.subtitle.semantic_segmentation.max_chars_per_line": 14,
+            "pipeline.subtitle.semantic_segmentation.max_duration": 7.0,
+        },
+        expected_improvement="字幕语义完整性显著提升，音字同步改善",
+        risk_level="low",
+    ),
+    "improve_subtitle_font_size": StrategyResult(
+        strategy_name="improve_subtitle_font_size",
+        description="字号优化至行业标准：4K→1080p缩放后有效40px，符合36-42px行业范围",
+        config_modifications={
+            "pipeline.subtitle.render_style.font_size": 80,
+        },
+        expected_improvement="字幕字号符合行业标准，可读性提升",
+        risk_level="low",
+    ),
+    "improve_subtitle_punctuation_display": StrategyResult(
+        strategy_name="improve_subtitle_punctuation_display",
+        description="标点显示优化：保留句末标点（。？！），移除逗号和内部标点，提升可读性",
+        config_modifications={
+            "pipeline.subtitle.display_punctuation": True,
+            "pipeline.subtitle.strip_punctuation": False,
+        },
+        expected_improvement="句末标点帮助观众理解语义完整性",
+        risk_level="low",
+    ),
+        "improve_subtitle_fragment_merging": StrategyResult(
+        strategy_name="improve_subtitle_fragment_merging",
+        description="优化字幕片段合并：减少超短碎片（≤3字/<1s），增强最小显示时长强制",
+        config_modifications={
+            "pipeline.subtitle.min_display_duration": 1.2,
+            "pipeline.subtitle.merge_tiny_fragments_enabled": True,
+            "pipeline.subtitle.fragment_min_chars_before_merge": 4,
+            "pipeline.subtitle.fragment_min_duration_ms": 1200,
+        },
+        expected_improvement="消除独立出现的'这个'、'对啊'、'但'等超短字幕碎片，提升观看体验",
+        risk_level="low",
+    ),
+    "improve_subtitle_background_fit": StrategyResult(
+        strategy_name="improve_subtitle_background_fit",
+        description="统一字幕条模型：背景完整包裹文字，用PIL实测文字尺寸替代启发式估算",
+        config_modifications={
+            "pipeline.subtitle.render_style.use_unified_bar_model": True,
+        },
+        expected_improvement="字幕背景完整包裹文字，视觉对齐准确",
+        risk_level="low",
+    ),
 }
 
 
@@ -239,9 +345,35 @@ def get_recommended_strategies(current_metrics: PipelineMetrics) -> list[Strateg
     if current_metrics.subtitle_style_score < 90:
         recommended.append(STRATEGIES["improve_subtitle_frosted_glass"])
 
-    if not recommended:
-        for strategy in STRATEGIES.values():
-            if strategy.risk_level == "low":
-                recommended.append(strategy)
+    if current_metrics.subtitle_style_extraction_score < 80:
+        recommended.append(STRATEGIES["improve_style_extraction"])
+
+    if not current_metrics.vertical_overlay_aspect_compliant:
+        recommended.append(STRATEGIES["improve_vertical_style_completeness"])
+
+    if current_metrics.vertical_style_completeness < 90:
+        recommended.append(STRATEGIES["improve_vertical_style_completeness"])
+
+    if current_metrics.alignment_score < 85:
+        recommended.append(STRATEGIES["improve_alignment_quality"])
+
+    if not current_metrics.loudness_normalization_pass or current_metrics.loudness_lufs_deviation > 1.0:
+        recommended.append(STRATEGIES["improve_loudness_two_pass"])
+
+    if current_metrics.subtitle_semantic_completeness < 80:
+        recommended.append(STRATEGIES["improve_subtitle_semantic_segmentation"])
+        recommended.append(STRATEGIES["improve_subtitle_multiline"])
+
+    if current_metrics.subtitle_visual_bounds_score < 90:
+        recommended.append(STRATEGIES["improve_subtitle_background_fit"])
+
+    if current_metrics.subtitle_font_size_score < 80:
+        recommended.append(STRATEGIES["improve_subtitle_font_size"])
+
+    if current_metrics.subtitle_filler_cleanup_score < 85:
+        recommended.append(STRATEGIES["improve_subtitle_semantic_segmentation"])
+
+    if current_metrics.subtitle_fragment_count > 0:
+        recommended.append(STRATEGIES["improve_subtitle_fragment_merging"])
 
     return recommended
